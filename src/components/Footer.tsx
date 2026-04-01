@@ -4,9 +4,7 @@ export default function Footer() {
       <div className='max-w-7xl mx-auto px-4 grid grid-cols-3 gap-8'>
         <div>
           <h3 className='text-2xl font-bold'>SevenStore</h3>
-          <p className='text-gray-400 mt-2'>
-            Website bán đồ công nghệ
-          </p>
+          <p className='text-gray-400 mt-2'>Website bán đồ công nghệ</p>
         </div>
 
         <div>

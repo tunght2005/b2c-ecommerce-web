@@ -27,25 +27,13 @@ export default function Home() {
       <ProductSection />
 
       {/* Category */}
-      <CategorySection
-        title='ĐIỆN THOẠI'
-        banner='/01KK8E4NQYFFSS1BRHNV4WXZZP.webp'
-      />
+      <CategorySection title='ĐIỆN THOẠI' banner='/01KK8E4NQYFFSS1BRHNV4WXZZP.webp' />
 
-      <CategorySection
-        title='LAPTOP'
-        banner='/01KK84Q078JE7HEGK1SF3GGZGZ.webp'
-      />
+      <CategorySection title='LAPTOP' banner='/01KK84Q078JE7HEGK1SF3GGZGZ.webp' />
 
-      <CategorySection
-        title='ĐỒNG HỒ'
-        banner='/01KG6K3S7WG02MXRFGD9N1WQQE.webp'
-      />
+      <CategorySection title='ĐỒNG HỒ' banner='/01KG6K3S7WG02MXRFGD9N1WQQE.webp' />
 
-      <CategorySection
-        title='PHỤ KIỆN'
-        banner='/01KM2Q70GFVDKYHVN3SR9SWAGK.webp'
-      />
+      <CategorySection title='PHỤ KIỆN' banner='/01KM2Q70GFVDKYHVN3SR9SWAGK.webp' />
 
       {/* Video */}
       <VideoSection />

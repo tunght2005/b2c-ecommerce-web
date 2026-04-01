@@ -57,32 +57,18 @@ export default function VideoCard({ video }: Props) {
 
   return (
     <div className='bg-white rounded-2xl overflow-hidden shadow hover:shadow-xl transition group'>
-
       {/* VIDEO */}
       <div className='relative h-[220px] bg-black'>
-
         {/* VIDEO ELEMENT */}
-        <video
-          ref={videoRef}
-          src={video.video}
-          muted
-          className='w-full h-full object-cover'
-        />
+        <video ref={videoRef} src={video.video} muted className='w-full h-full object-cover' />
 
         {/* THUMB */}
         {!isPlaying && (
           <>
-            <img
-              src={video.thumbnail}
-              alt={video.title}
-              className='absolute inset-0 w-full h-full object-cover'
-            />
+            <img src={video.thumbnail} alt={video.title} className='absolute inset-0 w-full h-full object-cover' />
 
             <div className='absolute inset-0 bg-black/40 flex items-center justify-center'>
-              <button
-                onClick={handlePlay}
-                className='bg-white p-3 rounded-full shadow'
-              >
+              <button onClick={handlePlay} className='bg-white p-3 rounded-full shadow'>
                 <Play className='text-red-500 ml-1' />
               </button>
             </div>
@@ -95,15 +81,10 @@ export default function VideoCard({ video }: Props) {
             <button onClick={handlePause}>⏸</button>
 
             <div className='flex gap-3'>
-              <button onClick={toggleMute}>
-                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-              </button>
+              <button onClick={toggleMute}>{isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}</button>
 
               <button onClick={() => setLiked(!liked)}>
-                <Heart
-                  size={16}
-                  className={liked ? 'text-red-500' : ''}
-                />
+                <Heart size={16} className={liked ? 'text-red-500' : ''} />
               </button>
             </div>
           </div>
@@ -111,21 +92,14 @@ export default function VideoCard({ video }: Props) {
 
         {/* PROGRESS */}
         <div className='absolute bottom-0 left-0 w-full h-1 bg-white/30'>
-          <div
-            className='h-full bg-red-500'
-            style={{ width: `${progress}%` }}
-          />
+          <div className='h-full bg-red-500' style={{ width: `${progress}%` }} />
         </div>
       </div>
 
       {/* INFO */}
       <div className='p-4'>
-        <h3 className='font-semibold text-gray-800 line-clamp-2'>
-          {video.title}
-        </h3>
-        <p className='text-sm text-gray-500 mt-1 line-clamp-2'>
-          {video.description}
-        </p>
+        <h3 className='font-semibold text-gray-800 line-clamp-2'>{video.title}</h3>
+        <p className='text-sm text-gray-500 mt-1 line-clamp-2'>{video.description}</p>
       </div>
     </div>
   )
