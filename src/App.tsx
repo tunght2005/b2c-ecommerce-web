@@ -8,6 +8,8 @@ import Register from './pages/Register'
 import Cart from './pages/Cart'
 import ProductDetail from './pages/ProductDetail'
 import CategoryPage from './pages/CategoryPage'
+import Orders from './pages/Orders'
+import OrderDetail from './pages/OrderDetail'
 
 function App() {
   return (
@@ -22,6 +24,8 @@ function App() {
         <Route path='/cart' element={<Cart />} />
         <Route path='/product/:id' element={<ProductDetail />} />
         <Route path='/category/:name' element={<CategoryPage />} />
+        <Route path='/orders' element={<Orders />} />
+        <Route path='/orders/:id' element={<OrderDetail />} />
       </Routes>
     </>
   )

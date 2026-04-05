@@ -1,16 +1,31 @@
-import React, { useState } from 'react';
-import { Trash2, Plus, Minus, ShoppingBag, MapPin, ArrowRight, ShieldCheck, X, Edit2, PlusCircle, CreditCard, Banknote, Wallet, Truck, Ticket } from 'lucide-react';
+import { useState } from 'react';
+import {
+  Trash2,
+  Plus,
+  Minus,
+  ShoppingBag,
+  MapPin,
+  ArrowRight,
+  X,
+  Edit2,
+  PlusCircle,
+  CreditCard,
+  Banknote,
+  Wallet,
+  Truck,
+  Ticket
+} from 'lucide-react'
 
 // --- TYPES & MOCK DATA ---
 interface Address {
-  id: number;
-  receiver_name: string;
-  phone: string;
-  detail: string;
-  ward: string;
-  district: string;
-  province: string;
-  is_default: boolean;
+  id: number
+  receiver_name: string
+  phone: string
+  detail: string
+  ward: string
+  district: string
+  province: string
+  is_default: boolean
 }
 
 const mockAddresses: Address[] = [
@@ -22,7 +37,7 @@ const mockAddresses: Address[] = [
     ward: 'P. Linh Đông',
     district: 'Thủ Đức',
     province: 'TP. Hồ Chí Minh',
-    is_default: true,
+    is_default: true
   },
   {
     id: 2,
@@ -32,20 +47,20 @@ const mockAddresses: Address[] = [
     ward: 'P. Bến Nghé',
     district: 'Quận 1',
     province: 'TP. Hồ Chí Minh',
-    is_default: false,
-  },
-];
+    is_default: false
+  }
+]
 
 interface CartItem {
-  id: number;
-  variant_id: number;
-  name: string;
-  variant: string;
-  price: number;
-  oldPrice: number;
-  quantity: number;
-  image: string;
-  selected: boolean;
+  id: number
+  variant_id: number
+  name: string
+  variant: string
+  price: number
+  oldPrice: number
+  quantity: number
+  image: string
+  selected: boolean
 }
 
 const initialCartItems: CartItem[] = [
@@ -58,7 +73,7 @@ const initialCartItems: CartItem[] = [
     oldPrice: 34990000,
     quantity: 1,
     image: 'https://images.unsplash.com/photo-1696446701796-da61225697cc?w=500&q=80',
-    selected: true,
+    selected: true
   },
   {
     id: 2,
@@ -69,17 +84,17 @@ const initialCartItems: CartItem[] = [
     oldPrice: 34990000,
     quantity: 1,
     image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&q=80',
-    selected: false,
+    selected: false
   }
-];
+]
 
 // --- MAIN COMPONENT ---
 const Cart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>(initialCartItems);
-  const [addresses, setAddresses] = useState<Address[]>(mockAddresses);
+  const [addresses] = useState<Address[]>(mockAddresses);
   
   const [selectedAddress, setSelectedAddress] = useState<Address>(
-    addresses.find(addr => addr.is_default) || addresses[0]
+    addresses.find((addr) => addr.is_default) || addresses[0]
   );
   
   // States quản lý Popup
@@ -95,55 +110,60 @@ const Cart = () => {
   };
 
   const handleSelectItem = (id: number) => {
-    setCartItems(cartItems.map(item => item.id === id ? { ...item, selected: !item.selected } : item));
+    setCartItems(cartItems.map((item) => (item.id === id ? { ...item, selected: !item.selected } : item)))
   };
 
   const handleSelectAll = (checked: boolean) => {
-    setCartItems(cartItems.map(item => ({ ...item, selected: checked })));
+    setCartItems(cartItems.map((item) => ({ ...item, selected: checked })))
   };
 
   const updateQuantity = (id: number, delta: number) => {
-    setCartItems(cartItems.map(item => {
-      if (item.id === id) {
-        const newQuantity = item.quantity + delta;
-        return { ...item, quantity: newQuantity > 0 ? newQuantity : 1 };
-      }
-      return item;
-    }));
-  };
+    setCartItems(
+      cartItems.map((item) => {
+        if (item.id === id) {
+          const newQuantity = item.quantity + delta
+          return { ...item, quantity: newQuantity > 0 ? newQuantity : 1 }
+        }
+        return item
+      })
+    )
+  }
 
   const removeItem = (id: number) => {
-    setCartItems(cartItems.filter(item => item.id !== id));
+    setCartItems(cartItems.filter((item) => item.id !== id))
   };
 
   const handleOpenCheckout = () => {
     if (selectedCount === 0) {
-      alert("Vui lòng chọn ít nhất một sản phẩm để thanh toán!");
+      alert('Vui lòng chọn ít nhất một sản phẩm để thanh toán!')
       return;
     }
     setIsCheckoutModalOpen(true);
   };
 
-  const selectedItems = cartItems.filter(item => item.selected);
-  const isAllSelected = cartItems.length > 0 && cartItems.every(item => item.selected);
-  const selectedCount = selectedItems.length;
+  const selectedItems = cartItems.filter((item) => item.selected)
+  const isAllSelected = cartItems.length > 0 && cartItems.every((item) => item.selected);
+  const selectedCount = selectedItems.length
 
   const totalPrice = selectedItems.reduce((total, item) => total + item.price * item.quantity, 0);
   const totalOldPrice = selectedItems.reduce((total, item) => total + item.oldPrice * item.quantity, 0);
-  const discountAmount = totalOldPrice - totalPrice;
+  const discountAmount = totalOldPrice - totalPrice
   const shippingFee = 0; // Giả sử đang miễn phí vận chuyển
 
   // --- GIAO DIỆN ---
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center bg-gray-50">
-        <div className="bg-white p-10 rounded-2xl shadow-sm text-center max-w-md w-full border border-gray-100">
-          <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <ShoppingBag className="w-12 h-12 text-[#E7000B]" />
+      <div className='min-h-[70vh] flex flex-col items-center justify-center bg-gray-50'>
+        <div className='bg-white p-10 rounded-2xl shadow-sm text-center max-w-md w-full border border-gray-100'>
+          <div className='w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6'>
+            <ShoppingBag className='w-12 h-12 text-[#E7000B]' />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Giỏ hàng trống</h2>
-          <p className="text-gray-500 mb-8">Bạn chưa có sản phẩm nào trong giỏ hàng.</p>
-          <a href="/" className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-[#E7000B] hover:bg-[#C10008] transition-colors w-full">
+          <h2 className='text-2xl font-bold text-gray-900 mb-2'>Giỏ hàng trống</h2>
+          <p className='text-gray-500 mb-8'>Bạn chưa có sản phẩm nào trong giỏ hàng.</p>
+          <a
+            href='/'
+            className='inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-[#E7000B] hover:bg-[#C10008] transition-colors w-full'
+          >
             Tiếp tục mua sắm
           </a>
         </div>
@@ -152,8 +172,8 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+    <div className='min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8'>
+      <div className='max-w-7xl mx-auto'>
         <h1 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
           GIỎ HÀNG <span className="text-gray-500 text-lg font-normal">({cartItems.length} sản phẩm)</span>
         </h1>
