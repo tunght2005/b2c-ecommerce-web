@@ -1,27 +1,30 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { 
+  Package, 
+  Search, 
+  ArrowRight, 
+  HelpCircle,
+  X
+} from 'lucide-react'
 
+// Interface chuẩn hóa theo DB Diagram của nhóm
 interface OrderItem {
+  variant_id: number
   name: string
   image: string
+  price: number
+  quantity: number
 }
 
 interface Order {
-  id: string
-  status: string
-  date: string
-  total: number
+  id: number
+  status: 'pending' | 'confirmed' | 'shipping' | 'delivered' | 'return' | 'cancelled'
+  payment_status: 'unpaid' | 'paid' | 'refunding'
+  created_at: string
+  final_price: number
   items: OrderItem[]
 }
-
-// Order statuses for backend reference:
-// - pending: Chờ xác nhận - bạn vừa đặt hàng, shop chưa xác nhận đơn
-// - confirmed: Chờ lấy hàng - shop đã xác nhận và đang đóng gói, chờ đơn vị vận chuyển đến lấy
-// - shipping: Đang giao - hàng đã được giao cho đơn vị vận chuyển và đang trên đường đến bạn
-// - delivered: Đã giao - shipper giao thành công, bạn đã nhận được hàng
-// - return: Trả hàng/Hoàn tiền - đơn đang được xử lý trả hàng hoặc hoàn tiền
-// - cancelled: Đã hủy - đơn đã bị hủy bởi bạn, shop hoặc hệ thống
-// Additional: completed (Hoàn thành), waiting_return (Chờ người mua trả hàng)
 
 const orderStatuses = [
   { key: 'all', label: 'Tất cả' },
@@ -29,149 +32,285 @@ const orderStatuses = [
   { key: 'confirmed', label: 'Chờ lấy hàng' },
   { key: 'shipping', label: 'Đang giao' },
   { key: 'delivered', label: 'Đã giao' },
-  { key: 'return', label: 'Trả hàng/Hoàn tiền' },
+  { key: 'return', label: 'Trả hàng' },
   { key: 'cancelled', label: 'Đã hủy' }
 ]
 
-// Mock data - thay thế bằng API call sau
+// Mock data khớp với cấu trúc DB thực tế
 const mockOrders: Order[] = [
   {
-    id: 'ORD001',
+    id: 1024,
     status: 'pending',
-    date: '2024-01-15',
-    total: 15000000,
+    payment_status: 'unpaid',
+    created_at: '2024-03-15 14:30',
+    final_price: 25990000,
     items: [
-      { name: 'iPhone 15 Pro Max', image: 'https://via.placeholder.com/300x300?text=iPhone+15' },
-      { name: 'AirPods Pro', image: 'https://via.placeholder.com/300x300?text=AirPods+Pro' }
+      { variant_id: 1, name: 'iPhone 15 Pro Max 256GB - Titan tự nhiên', image: 'https://via.placeholder.com/300x300', price: 25990000, quantity: 1 }
     ]
   },
   {
-    id: 'ORD002',
-    status: 'confirmed',
-    date: '2024-01-14',
-    total: 25000000,
-    items: [{ name: 'MacBook Air M3', image: 'https://via.placeholder.com/300x300?text=MacBook+M3' }]
-  },
-  {
-    id: 'ORD003',
-    status: 'shipping',
-    date: '2024-01-13',
-    total: 8000000,
-    items: [{ name: 'Samsung Galaxy S25 Ultra', image: 'https://via.placeholder.com/300x300?text=Samsung+S25' }]
-  },
-  {
-    id: 'ORD004',
+    id: 1025,
     status: 'delivered',
-    date: '2024-01-12',
-    total: 12000000,
-    items: [{ name: 'Apple Watch Series 9', image: 'https://via.placeholder.com/300x300?text=Watch+Series+9' }]
-  },
-  {
-    id: 'ORD005',
-    status: 'return',
-    date: '2024-01-11',
-    total: 5000000,
-    items: [{ name: 'Tai nghe Sony', image: 'https://via.placeholder.com/300x300?text=Sony+Headphones' }]
-  },
-  {
-    id: 'ORD006',
-    status: 'cancelled',
-    date: '2024-01-10',
-    total: 3000000,
-    items: [{ name: 'Cáp Lightning', image: 'https://via.placeholder.com/300x300?text=Lightning+Cable' }]
+    payment_status: 'paid',
+    created_at: '2024-03-10 09:15',
+    final_price: 12500000,
+    items: [
+      { variant_id: 5, name: 'Apple Watch Series 9 45mm GPS', image: 'https://via.placeholder.com/300x300', price: 12500000, quantity: 1 }
+    ]
   }
 ]
 
-function Orders() {
+// Các lý do hủy đơn (Giống thực tế)
+const cancelReasonsList = [
+  'Muốn thay đổi địa chỉ giao hàng',
+  'Muốn thay đổi sản phẩm (Màu sắc, Dung lượng,...)',
+  'Tìm thấy giá rẻ hơn ở chỗ khác',
+  'Đổi ý, không muốn mua nữa',
+  'Lý do khác'
+]
+
+export default function Orders() {
   const [activeTab, setActiveTab] = useState('all')
   const navigate = useNavigate()
 
+  // State quản lý Popup Hủy đơn
+  const [cancelModal, setCancelModal] = useState<{ isOpen: boolean; orderId: number | null }>({ isOpen: false, orderId: null })
+  const [selectedReason, setSelectedReason] = useState('')
+
   const filteredOrders = activeTab === 'all' ? mockOrders : mockOrders.filter((order) => order.status === activeTab)
 
-  const getStatusLabel = (status: string) => {
-    const statusObj = orderStatuses.find((s) => s.key === status)
-    return statusObj ? statusObj.label : status
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount)
+  const renderStatusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      pending: 'bg-orange-50 text-orange-600 border-orange-100',
+      confirmed: 'bg-blue-50 text-blue-600 border-blue-100',
+      shipping: 'bg-purple-50 text-purple-600 border-purple-100',
+      delivered: 'bg-green-50 text-green-600 border-green-100',
+      cancelled: 'bg-gray-50 text-gray-500 border-gray-100',
+      return: 'bg-red-50 text-red-600 border-red-100'
+    }
+    const labels: Record<string, string> = {
+      pending: 'Chờ xác nhận', confirmed: 'Chờ lấy hàng', shipping: 'Đang giao',
+      delivered: 'Giao thành công', cancelled: 'Đã hủy', return: 'Trả hàng/Hoàn tiền'
+    }
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles[status]}`}>
+        {labels[status]}
+      </span>
+    )
+  }
+
+  // Hàm xử lý khi bấm nút "Đồng ý" trong Popup
+  const handleSubmitCancel = () => {
+    if (!selectedReason) return alert('Vui lòng chọn lý do hủy đơn!')
+    
+    // Đóng popup
+    setCancelModal({ isOpen: false, orderId: null })
+    setSelectedReason('')
+    
+    // Chuyển hướng sang trang Thành công
+    navigate(`/orders/${cancelModal.orderId}/cancel-success`)
   }
 
   return (
-    <div className='max-w-7xl mx-auto px-4 py-8'>
-      <h1 className='text-2xl font-bold text-gray-900 mb-6'>Đơn mua</h1>
-
-      {/* Tabs */}
-      <div className='flex flex-wrap gap-2 mb-6 border-b border-gray-200'>
-        {orderStatuses.map((status) => (
-          <button
-            key={status.key}
-            onClick={() => setActiveTab(status.key)}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-              activeTab === status.key
-                ? 'bg-red-600 text-white border-b-2 border-red-600'
-                : 'text-gray-600 hover:text-red-600 hover:bg-gray-50'
-            }`}
-          >
-            {status.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Orders List */}
-      <div className='space-y-4'>
-        {filteredOrders.length === 0 ? (
-          <div className='text-center py-12'>
-            <p className='text-gray-500'>Không có đơn hàng nào.</p>
+    <div className='bg-gray-50 min-h-screen py-6 sm:py-10 relative'>
+      <div className='max-w-5xl mx-auto px-4'>
+        
+        {/* Banner Chính sách */}
+        <div className='bg-white rounded-3xl p-4 sm:p-5 mb-6 flex items-center justify-between shadow-sm border border-red-100 bg-gradient-to-r from-white to-red-50'>
+          <div className='flex items-center gap-3'>
+            <div className='bg-red-500 p-2 rounded-xl text-white'>
+              <HelpCircle size={20} />
+            </div>
+            <div>
+              <p className='text-sm font-bold text-gray-900'>Bạn cần hỗ trợ đổi trả hàng?</p>
+              <p className='text-xs text-gray-500'>Tìm hiểu ngay chính sách bảo vệ người mua của SevenStore</p>
+            </div>
           </div>
-        ) : (
-          filteredOrders.map((order) => (
-            <div key={order.id} className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
-              <div className='flex justify-between items-start mb-4'>
-                <div>
-                  <h3 className='font-semibold text-lg'>Đơn hàng #{order.id}</h3>
-                  <p className='text-sm text-gray-600'>Ngày đặt: {order.date}</p>
-                </div>
-                <div className='text-right'>
-                  <p className='font-semibold text-red-600'>{formatCurrency(order.total)}</p>
-                  <p className='text-sm text-gray-600'>{getStatusLabel(order.status)}</p>
-                </div>
-              </div>
+          <button 
+            onClick={() => navigate('/return-policy')}
+            className='flex items-center gap-1 text-red-600 text-sm font-bold hover:gap-2 transition-all whitespace-nowrap'
+          >
+            Xem chính sách <ArrowRight size={16} />
+          </button>
+        </div>
 
-              <div className='mb-4'>
-                <p className='text-sm text-gray-700 mb-2'>Sản phẩm:</p>
-                <div className='flex flex-wrap gap-4'>
-                  {order.items.map((item, index) => (
-                    <div key={index} className='flex items-center gap-3 bg-gray-50 rounded-lg p-3'>
-                      <img src={item.image} alt={item.name} className='w-12 h-12 object-cover rounded-lg' />
-                      <span className='text-sm text-gray-800'>{item.name}</span>
+        <h1 className='text-2xl sm:text-3xl font-bold text-gray-900 mb-6'>Đơn mua của tôi</h1>
+
+        {/* Tabs */}
+        <div className='flex overflow-x-auto no-scrollbar gap-2 mb-8 border-b border-gray-200 pb-px'>
+          {orderStatuses.map((status) => (
+            <button
+              key={status.key}
+              onClick={() => setActiveTab(status.key)}
+              className={`whitespace-nowrap px-6 py-3 text-sm font-bold transition-all relative ${
+                activeTab === status.key ? 'text-red-600' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {status.label}
+              {activeTab === status.key && (
+                <div className='absolute bottom-0 left-0 w-full h-1 bg-red-600 rounded-full' />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Orders List */}
+        <div className='space-y-6'>
+          {filteredOrders.length === 0 ? (
+            <div className='text-center py-20 bg-white rounded-3xl shadow-sm border border-gray-100'>
+              <Search className='mx-auto text-gray-300 mb-4' size={48} />
+              <p className='text-gray-500'>Bạn chưa có đơn hàng nào ở trạng thái này.</p>
+            </div>
+          ) : (
+            filteredOrders.map((order) => (
+              <div key={order.id} className='bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition'>
+                <div className='px-6 py-4 bg-gray-50 flex flex-wrap justify-between items-center gap-4 border-b border-gray-100'>
+                  <div className='flex items-center gap-3'>
+                    <Package className='text-red-600' size={20} />
+                    <span className='font-bold text-gray-900 uppercase'>Mã đơn: Seven-{order.id}</span>
+                  </div>
+                  {renderStatusBadge(order.status)}
+                </div>
+
+                <div className='p-6 space-y-4'>
+                  {order.items.map((item, idx) => (
+                    <div key={idx} className='flex gap-4 items-start sm:items-center'>
+                      <img src={item.image} className='w-20 h-20 object-cover rounded-2xl bg-gray-100' />
+                      <div className='flex-1'>
+                        <h4 className='font-bold text-gray-900 line-clamp-1'>{item.name}</h4>
+                        <p className='text-sm text-gray-500 mt-1'>Số lượng: x{item.quantity}</p>
+                        <p className='text-red-600 font-bold mt-1 sm:hidden'>{formatCurrency(item.price)}</p>
+                      </div>
+                      <div className='hidden sm:block text-right'>
+                        <p className='font-bold text-gray-900'>{formatCurrency(item.price)}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
 
-              <div className='flex gap-2'>
-                <button
-                  onClick={() => navigate(`/orders/${order.id}`)}
-                  className='px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition'
-                >
-                  Xem chi tiết
-                </button>
-                {order.status === 'delivered' && (
-                  <button className='px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition'>
-                    Đánh giá
-                  </button>
-                )}
+                <div className='px-6 py-5 bg-white border-t border-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4'>
+                  <div className='text-sm text-gray-500 italic'>
+                    Ngày đặt: {order.created_at} • {order.payment_status === 'paid' ? 'Đã thanh toán' : 'Thanh toán khi nhận hàng'}
+                  </div>
+                  
+                  <div className='flex flex-wrap justify-center gap-3 w-full sm:w-auto'>
+                    {order.status === 'pending' && (
+                      <button 
+                        onClick={() => setCancelModal({ isOpen: true, orderId: order.id })}
+                        className='flex-1 sm:flex-none px-6 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition'
+                      >
+                        Hủy đơn hàng
+                      </button>
+                    )}
+
+                    {order.status === 'delivered' && (
+                      <>
+                        <button 
+                          onClick={() => navigate(`/orders/${order.id}/return`)}
+                          className='flex-1 sm:flex-none px-6 py-2.5 rounded-xl border border-orange-200 text-orange-600 font-bold text-sm hover:bg-orange-50 transition'
+                        >
+                          Trả hàng/Hoàn tiền
+                        </button>
+                        <button className='flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition shadow-lg shadow-red-100'>
+                          Đánh giá
+                        </button>
+                      </>
+                    )}
+
+                    <button 
+                      onClick={() => navigate(`/orders/${order.id}`)}
+                      className='flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-black transition'
+                    >
+                      Chi tiết đơn
+                    </button>
+                  </div>
+                </div>
+
+                <div className='px-6 py-3 bg-red-50/30 text-right'>
+                   <span className='text-gray-600 text-sm'>Thành tiền: </span>
+                   <span className='text-xl font-black text-red-600 ml-2'>{formatCurrency(order.final_price)}</span>
+                </div>
               </div>
-            </div>
-          ))
-        )}
+            ))
+          )}
+        </div>
       </div>
+
+      {/* POPUP (MODAL) LÝ DO HỦY ĐƠN */}
+      {cancelModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl scale-100 transition-transform">
+            
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <h3 className="font-bold text-lg text-gray-900">Lý do hủy đơn</h3>
+              <button 
+                onClick={() => {
+                  setCancelModal({ isOpen: false, orderId: null })
+                  setSelectedReason('') // Reset lý do khi tắt popup
+                }}
+                className="text-gray-400 hover:text-gray-600 p-1 bg-gray-50 rounded-full"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-3">
+              <p className="text-sm text-gray-500 mb-4">Vui lòng chọn lý do hủy đơn hàng #{cancelModal.orderId}. Lưu ý, hành động này không thể hoàn tác.</p>
+              
+              {cancelReasonsList.map((reason) => (
+                <div 
+                  key={reason} 
+                  onClick={() => setSelectedReason(reason)} // ĐÃ THÊM SỰ KIỆN CLICK VÀO ĐÂY
+                  className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${
+                    selectedReason === reason ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                    selectedReason === reason ? 'border-red-500' : 'border-gray-300'
+                  }`}>
+                    {selectedReason === reason && <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>}
+                  </div>
+                  <span className={`text-sm font-medium ${selectedReason === reason ? 'text-red-700' : 'text-gray-700'}`}>
+                    {reason}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-5 border-t border-gray-100 flex gap-3">
+              <button 
+                onClick={() => {
+                  setCancelModal({ isOpen: false, orderId: null })
+                  setSelectedReason('')
+                }}
+                className="flex-1 py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition"
+              >
+                Không
+              </button>
+              <button 
+                onClick={handleSubmitCancel}
+                className={`flex-1 py-3.5 rounded-2xl font-bold text-white transition shadow-lg ${
+                  selectedReason ? 'bg-red-600 hover:bg-red-700 shadow-red-200' : 'bg-gray-300 cursor-not-allowed shadow-none'
+                }`}
+              >
+                Đồng ý
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      `}</style>
     </div>
   )
 }
-
-export default Orders

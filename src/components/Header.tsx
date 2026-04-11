@@ -37,12 +37,12 @@ function Header() {
     window.addEventListener('openAuthModal', handleOpenModalFromOutside as EventListener)
 
     return () => {
-    window.removeEventListener(
-      'openAuthModal',
-      handleOpenModalFromOutside as EventListener
-    )
-  }
-}, [])
+      window.removeEventListener(
+        'openAuthModal',
+        handleOpenModalFromOutside as EventListener
+      )
+    }
+  }, [])
 
   // --- LẮNG NGHE SỰ KIỆN: Tăng số lượng giỏ hàng ---
   useEffect(() => {
@@ -66,15 +66,18 @@ function Header() {
     const result = fakeData.filter((item) => item.toLowerCase().includes(value.toLowerCase()))
     setSuggestions(result)
   }
+
   return (
     <header className='bg-red-600 text-white shadow-md sticky top-0 z-50'>
       <div className='max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4'>
-        <h1
+        
+        {/* LOGO MỚI ĐƯỢC THÊM VÀO ĐÂY */}
+        <img
+          src="/logo.svg"
+          alt="SevenStore Logo"
           onClick={() => navigate('/')}
-          className='text-3xl font-bold cursor-pointer hover:text-yellow-300 transition'
-        >
-          SevenStore
-        </h1>
+          className="h-8 sm:h-10 w-auto object-contain cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+        />
 
         <div className='flex-1 flex justify-center relative'>
           <div className='relative w-full max-w-[500px]'>
