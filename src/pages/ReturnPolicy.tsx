@@ -1,4 +1,4 @@
-import { ShieldCheck, Clock, CheckCircle2, AlertCircle, FileText } from 'lucide-react'
+import { Clock, CheckCircle2, AlertCircle, FileText } from 'lucide-react'
 
 export default function ReturnPolicy() {
   return (

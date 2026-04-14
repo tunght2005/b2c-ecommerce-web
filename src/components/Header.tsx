@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, ShoppingCart, User, Package } from 'lucide-react'
+import { Search, ShoppingCart, User } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import AuthModal from './AuthModal'
 
@@ -125,14 +125,6 @@ function Header() {
           </button>
 
           <button
-            onClick={() => navigate('/orders')}
-            className='flex items-center gap-2 hover:text-yellow-300 transition'
-          >
-            <Package size={18} />
-            <span className='hidden sm:inline'>Đơn mua</span>
-          </button>
-
-          <button
             onClick={() => navigate('/cart')}
             className='relative flex items-center gap-2 hover:text-yellow-300 transition'
           >
@@ -145,6 +137,16 @@ function Header() {
                 {cartCount}
               </span>
             )}
+          </button>
+
+          <button
+            onClick={() => navigate('/profile')}
+            className='flex items-center gap-2 hover:text-yellow-300 transition group'
+          >
+            <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/30 group-hover:border-yellow-300 transition">
+              <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100" alt="Avatar" className="w-full h-full object-cover" />
+            </div>
+            <span className='hidden sm:inline font-bold'>Huong Tran</span>
           </button>
         </div>
       </div>

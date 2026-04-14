@@ -1,7 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Truck, MapPin, Store, ClipboardList, CreditCard } from 'lucide-react'
+import { ArrowLeft, Truck, MapPin, Store, ClipboardList } from 'lucide-react'
 
-// --- TYPES & MOCK DATA (GIỮ NGUYÊN 100% CỦA BẠN) ---
 interface OrderItem {
   name: string
   image: string
@@ -69,7 +68,7 @@ const statusDescriptions: Record<string, string> = {
   cancelled: 'Đơn đã bị hủy bởi bạn, shop hoặc hệ thống.'
 }
 
-// --- DỮ LIỆU TRACKING GIẢ LẬP THEO DB DIAGRAM ---
+
 const trackingLogs = [
   { id: 4, status: 'Đã giao hàng thành công', note: 'Người nhận: Tùng HT', time: '14:30 - 15/03/2024', isDone: true, isCurrent: true },
   { id: 3, status: 'Đang giao hàng', note: 'Shipper đang trên đường giao hàng cho bạn.', time: '09:15 - 15/03/2024', isDone: true, isCurrent: false },
@@ -87,7 +86,7 @@ function OrderDetail() {
     return (
       <div className='max-w-7xl mx-auto px-4 py-8 text-center'>
         <p className='text-gray-500'>Không tìm thấy đơn hàng.</p>
-        <button onClick={() => navigate('/orders')} className='mt-4 px-4 py-2 bg-red-600 text-white rounded-lg'>Quay lại danh sách</button>
+        <button onClick={() => navigate('/profile/orders')} className='mt-4 px-4 py-2 bg-red-600 text-white rounded-lg'>Quay lại danh sách</button>
       </div>
     )
   }
@@ -100,13 +99,13 @@ function OrderDetail() {
     <div className='max-w-7xl mx-auto px-4 py-8 bg-gray-50 min-h-screen'>
       {/* Header */}
       <div className='flex items-center gap-4 mb-6'>
-        <button onClick={() => navigate('/orders')} className='flex items-center gap-2 text-gray-600 hover:text-red-600 transition'>
+        <button onClick={() => navigate('/profile/orders')} className='flex items-center gap-2 text-gray-600 hover:text-red-600 transition'>
           <ArrowLeft size={20} /> Quay lại
         </button>
         <h1 className='text-2xl font-bold text-gray-900'>Chi tiết đơn hàng #{order.id}</h1>
       </div>
 
-      {/* 1. Trạng thái đơn hàng & Mô tả (GIỮ NGUYÊN LOGIC CỦA BẠN) */}
+      {/* 1. Trạng thái đơn hàng & Mô tả  */}
       <div className='bg-white rounded-3xl shadow-sm border border-gray-200 p-6 mb-6'>
         <div className='flex justify-between items-center mb-4'>
           <h2 className='text-lg font-bold'>Trạng thái đơn hàng</h2>

@@ -14,6 +14,10 @@ import OrderDetail from './pages/OrderDetail'
 import ReturnPolicy from './pages/ReturnPolicy'
 import ReturnRequest from './pages/ReturnRequest'
 import CancelSuccess from './pages/CancelSuccess'
+import OrderSuccess from './pages/OrderSuccess'
+
+import ProfileLayout from './components/ProfileLayout'
+import ProfileInfo from './pages/ProfileInfo'
 
 function App() {
   return (
@@ -28,11 +32,20 @@ function App() {
         <Route path='/cart' element={<Cart />} />
         <Route path='/product/:id' element={<ProductDetail />} />
         <Route path='/category/:name' element={<CategoryPage />} />
-        <Route path='/orders' element={<Orders />} />
+        
+        {/* PROFILE NESTED ROUTES */}
+        <Route path='/profile' element={<ProfileLayout />}>
+          <Route index element={<ProfileInfo />} />
+          <Route path='orders' element={<Orders />} />
+        </Route>
+
+        {/* ORDER DETAILS & ACTIONS (Full Screen) */}
         <Route path='/orders/:id' element={<OrderDetail />} />
-        <Route path='/return-policy' element={<ReturnPolicy />} />
         <Route path='/orders/:id/return' element={<ReturnRequest />} />
         <Route path='/orders/:id/cancel-success' element={<CancelSuccess />} />
+        <Route path='/order-success/:id' element={<OrderSuccess />} />
+        
+        <Route path='/return-policy' element={<ReturnPolicy />} />
       </Routes>
 
       <AIChat />

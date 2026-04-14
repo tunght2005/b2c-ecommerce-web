@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Trash2,
   Plus,
@@ -9,9 +10,6 @@ import {
   X,
   Edit2,
   PlusCircle,
-  CreditCard,
-  Banknote,
-  Wallet,
   Truck,
   Ticket,
   Tag // Thêm icon Tag cho Voucher
@@ -93,6 +91,7 @@ const initialCartItems: CartItem[] = [
 const Cart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>(initialCartItems);
   const [addresses] = useState<Address[]>(mockAddresses);
+  const navigate = useNavigate();
   
   const [selectedAddress, setSelectedAddress] = useState<Address>(
     addresses.find((addr) => addr.is_default) || addresses[0]
@@ -102,8 +101,8 @@ const Cart = () => {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   
-  // State quản lý Phương thức thanh toán
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'credit' | 'momo' | 'vnpay'>('cod');
+  // Popup tạo địa chỉ
+  const [isAddNewAddressOpen, setIsAddNewAddressOpen] = useState(false);
 
   // --- STATE QUẢN LÝ VOUCHER ---
   const [voucherCode, setVoucherCode] = useState('');
@@ -312,7 +311,7 @@ const Cart = () => {
 
       {/* --- 1. POPUP THAY ĐỔI ĐỊA CHỈ (GIỮ NGUYÊN) --- */}
       {isAddressModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setIsAddressModalOpen(false)}>
+        <div className="fixed inset-0 bg-black/50 z-[220] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setIsAddressModalOpen(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5 border-b border-gray-100 pb-4">
               <h2 className="text-xl font-bold text-gray-900">Địa chỉ nhận hàng</h2>
@@ -339,9 +338,70 @@ const Cart = () => {
               })}
             </div>
             <div className="border-t border-gray-100 pt-4 mt-5">
-              <button className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#E7000B] text-[#E7000B] py-3 rounded-xl font-semibold hover:bg-red-50 transition text-sm">
+              <button onClick={() => setIsAddNewAddressOpen(true)} className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#E7000B] text-[#E7000B] py-3 rounded-xl font-semibold hover:bg-red-50 transition text-sm">
                 <PlusCircle size={18} /> Thêm địa chỉ mới
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- FORM THÊM ĐỊA CHỈ MỚI --- */}
+      {isAddNewAddressOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[210] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setIsAddNewAddressOpen(false)}>
+          <div className="bg-white rounded-3xl shadow-xl w-full max-w-xl p-6 md:p-8 relative flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
+              <h2 className="text-xl font-bold text-gray-900">Thêm Địa Chỉ Mới</h2>
+              <button onClick={() => setIsAddNewAddressOpen(false)} className="text-gray-400 hover:text-gray-700 transition p-1 bg-gray-50 rounded-full hover:bg-gray-100"><X size={20} /></button>
+            </div>
+            
+            <div className="space-y-5 overflow-y-auto scroller pr-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-gray-700">Họ và tên</label>
+                  <input type="text" placeholder="Tên người nhận" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] focus:ring-1 focus:ring-[#E7000B]" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-gray-700">Số điện thoại</label>
+                  <input type="text" placeholder="Số điện thoại" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] focus:ring-1 focus:ring-[#E7000B]" />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-gray-700">Tỉnh/Thành</label>
+                  <select className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] bg-white text-sm">
+                    <option>Chọn Tỉnh/Thành</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-gray-700">Quận/Huyện</label>
+                  <select className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] bg-white text-sm">
+                    <option>Chọn Quận/Huyện</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-gray-700">Phường/Xã</label>
+                  <select className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] bg-white text-sm">
+                    <option>Chọn Phường/Xã</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-gray-700">Địa chỉ cụ thể</label>
+                <input type="text" placeholder="Số nhà, Tên đường, Tòa nhà..." className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] focus:ring-1 focus:ring-[#E7000B]" />
+              </div>
+
+              <div className="flex items-center gap-2 mt-4">
+                <input type="checkbox" id="defaultAddr" className="w-4 h-4 accent-[#E7000B] cursor-pointer rounded" />
+                <label htmlFor="defaultAddr" className="text-sm text-gray-700 cursor-pointer">Đặt làm địa chỉ mặc định</label>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100 pt-5 mt-6 flex gap-3">
+              <button onClick={() => setIsAddNewAddressOpen(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Hủy bỏ</button>
+              <button onClick={() => setIsAddNewAddressOpen(false)} className="flex-1 py-3 bg-[#E7000B] text-white font-bold rounded-xl hover:bg-[#C10008] transition shadow-lg shadow-red-100">Lưu địa chỉ</button>
             </div>
           </div>
         </div>
@@ -374,7 +434,7 @@ const Cart = () => {
                       <p className="font-semibold text-gray-900 text-base">{selectedAddress.receiver_name} <span className="text-gray-400 font-normal mx-2">|</span> {selectedAddress.phone}</p>
                       <p className="text-gray-600 mt-1.5 text-sm leading-relaxed">{`${selectedAddress.detail}, ${selectedAddress.ward}, ${selectedAddress.district}, ${selectedAddress.province}`}</p>
                     </div>
-                    <button onClick={() => {setIsCheckoutModalOpen(false); setIsAddressModalOpen(true);}} className="text-[#E7000B] text-sm font-medium hover:underline flex-shrink-0">
+                    <button onClick={() => setIsAddressModalOpen(true)} className="text-[#E7000B] text-sm font-medium hover:underline flex-shrink-0">
                       Thay đổi
                     </button>
                   </div>
@@ -400,20 +460,15 @@ const Cart = () => {
                 <section>
                   <h3 className="text-lg font-bold text-gray-900 mb-4">3. Phương thức thanh toán</h3>
                   <div className="space-y-3">
-                    <label className={`flex items-center gap-4 p-4 border rounded-xl cursor-pointer transition hover:border-red-300 ${paymentMethod === 'cod' ? 'border-[#E7000B] bg-red-50/20' : 'border-gray-200'}`}>
-                      <input type="radio" name="payment" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="w-5 h-5 accent-[#E7000B]" />
-                      <Banknote className="text-green-600" size={28} />
-                      <span className="font-medium text-gray-900">Thanh toán tiền mặt khi nhận hàng (COD)</span>
-                    </label>
-                    <label className={`flex items-center gap-4 p-4 border rounded-xl cursor-pointer transition hover:border-red-300 ${paymentMethod === 'credit' ? 'border-[#E7000B] bg-red-50/20' : 'border-gray-200'}`}>
-                      <input type="radio" name="payment" checked={paymentMethod === 'credit'} onChange={() => setPaymentMethod('credit')} className="w-5 h-5 accent-[#E7000B]" />
-                      <CreditCard className="text-blue-600" size={28} />
-                      <span className="font-medium text-gray-900">Thẻ Tín dụng / Ghi nợ</span>
-                    </label>
-                    <label className={`flex items-center gap-4 p-4 border rounded-xl cursor-pointer transition hover:border-red-300 ${paymentMethod === 'momo' ? 'border-[#E7000B] bg-red-50/20' : 'border-gray-200'}`}>
-                      <input type="radio" name="payment" checked={paymentMethod === 'momo'} onChange={() => setPaymentMethod('momo')} className="w-5 h-5 accent-[#E7000B]" />
-                      <Wallet className="text-pink-500" size={28} />
-                      <span className="font-medium text-gray-900">Thanh toán bằng Ví MoMo</span>
+                    <label className={`flex items-center gap-4 p-4 border rounded-xl cursor-pointer transition border-blue-600 bg-blue-50/20`}>
+                      <input type="radio" name="payment" checked={true} readOnly className="w-5 h-5 accent-blue-600" />
+                      <div className="bg-blue-600 text-white rounded-lg flex items-center justify-center overflow-hidden border border-blue-700 w-16 h-10 shadow-sm">
+                         <span className="font-black italic text-base -tracking-wide">VNPAY</span>
+                      </div>
+                      <div className="flex-1">
+                        <span className="font-bold text-gray-900 block">Thanh toán an toàn qua cổng VNPay</span>
+                        <span className="text-xs text-gray-500 block mt-0.5">Quét mã QR qua ứng dụng ngân hàng hoặc thẻ ATM nội địa/quốc tế</span>
+                      </div>
                     </label>
                   </div>
                 </section>
@@ -506,7 +561,7 @@ const Cart = () => {
 
                 {/* Nút Đặt Hàng */}
                 <div className="p-5 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                  <button onClick={() => alert("Chức năng đặt hàng đang được xử lý API...")} className="w-full bg-[#E7000B] text-white py-3.5 rounded-xl font-bold text-lg hover:bg-[#C10008] transition shadow-lg shadow-red-200 flex items-center justify-center gap-2">
+                  <button onClick={() => navigate('/order-success/SEVEN-9999')} className="w-full bg-[#E7000B] text-white py-3.5 rounded-xl font-bold text-lg hover:bg-[#C10008] transition shadow-lg shadow-red-200 flex items-center justify-center gap-2">
                     Xác nhận đặt hàng
                   </button>
                   <p className="text-center text-xs text-gray-500 mt-3">

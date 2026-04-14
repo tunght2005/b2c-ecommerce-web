@@ -116,8 +116,8 @@ export default function Orders() {
   }
 
   return (
-    <div className='bg-gray-50 min-h-screen py-6 sm:py-10 relative'>
-      <div className='max-w-5xl mx-auto px-4'>
+    <div className='bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 min-h-full'>
+      <div className='w-full'>
         
         {/* Banner Chính sách */}
         <div className='bg-white rounded-3xl p-4 sm:p-5 mb-6 flex items-center justify-between shadow-sm border border-red-100 bg-gradient-to-r from-white to-red-50'>
