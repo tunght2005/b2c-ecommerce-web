@@ -1,27 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   Package, 
   Search, 
   ArrowRight, 
   HelpCircle,
-  X
+  X,
+  Loader2
 } from 'lucide-react'
+import { fetchClient } from '../api/fetchClient'
 
 // Interface chuẩn hóa theo DB Diagram của nhóm
 interface OrderItem {
-  variant_id: number
-  name: string
-  image: string
-  price: number
+  variant_id: string | { _id: string, name?: string, sku?: string }
+  name?: string
+  image?: string
+  price?: number
   quantity: number
 }
 
 interface Order {
-  id: number
-  status: 'pending' | 'confirmed' | 'shipping' | 'delivered' | 'return' | 'cancelled'
-  payment_status: 'unpaid' | 'paid' | 'refunding'
-  created_at: string
+  _id: string
+  status: string
+  payment_status?: string
+  createdAt: string
   final_price: number
   items: OrderItem[]
 }
@@ -34,30 +36,6 @@ const orderStatuses = [
   { key: 'delivered', label: 'Đã giao' },
   { key: 'return', label: 'Trả hàng' },
   { key: 'cancelled', label: 'Đã hủy' }
-]
-
-// Mock data khớp với cấu trúc DB thực tế
-const mockOrders: Order[] = [
-  {
-    id: 1024,
-    status: 'pending',
-    payment_status: 'unpaid',
-    created_at: '2024-03-15 14:30',
-    final_price: 25990000,
-    items: [
-      { variant_id: 1, name: 'iPhone 15 Pro Max 256GB - Titan tự nhiên', image: 'https://via.placeholder.com/300x300', price: 25990000, quantity: 1 }
-    ]
-  },
-  {
-    id: 1025,
-    status: 'delivered',
-    payment_status: 'paid',
-    created_at: '2024-03-10 09:15',
-    final_price: 12500000,
-    items: [
-      { variant_id: 5, name: 'Apple Watch Series 9 45mm GPS', image: 'https://via.placeholder.com/300x300', price: 12500000, quantity: 1 }
-    ]
-  }
 ]
 
 // Các lý do hủy đơn (Giống thực tế)
@@ -73,11 +51,31 @@ export default function Orders() {
   const [activeTab, setActiveTab] = useState('all')
   const navigate = useNavigate()
 
+  const [orders, setOrders] = useState<Order[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
   // State quản lý Popup Hủy đơn
-  const [cancelModal, setCancelModal] = useState<{ isOpen: boolean; orderId: number | null }>({ isOpen: false, orderId: null })
+  const [cancelModal, setCancelModal] = useState<{ isOpen: boolean; orderId: string | null }>({ isOpen: false, orderId: null })
   const [selectedReason, setSelectedReason] = useState('')
 
-  const filteredOrders = activeTab === 'all' ? mockOrders : mockOrders.filter((order) => order.status === activeTab)
+  useEffect(() => {
+    const fetchMyOrders = async () => {
+      try {
+        setIsLoading(true)
+        const response: Record<string, unknown> = await fetchClient('/order')
+        if (response?.data) {
+          setOrders(response.data as Order[])
+        }
+      } catch (err) {
+        console.error('Lỗi khi lấy đơn hàng:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchMyOrders()
+  }, [])
+
+  const filteredOrders = activeTab === 'all' ? orders : orders.filter((order) => order.status === activeTab)
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
@@ -160,18 +158,23 @@ export default function Orders() {
 
         {/* Orders List */}
         <div className='space-y-6'>
-          {filteredOrders.length === 0 ? (
+          {isLoading ? (
+             <div className='text-center py-20 bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center'>
+               <Loader2 className="animate-spin text-[#E7000B] mb-4" size={40} />
+               <p className='text-gray-500 font-medium'>Đang tải danh sách đơn hàng...</p>
+             </div>
+          ) : filteredOrders.length === 0 ? (
             <div className='text-center py-20 bg-white rounded-3xl shadow-sm border border-gray-100'>
               <Search className='mx-auto text-gray-300 mb-4' size={48} />
               <p className='text-gray-500'>Bạn chưa có đơn hàng nào ở trạng thái này.</p>
             </div>
           ) : (
             filteredOrders.map((order) => (
-              <div key={order.id} className='bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition'>
+              <div key={order._id} className='bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition'>
                 <div className='px-6 py-4 bg-gray-50 flex flex-wrap justify-between items-center gap-4 border-b border-gray-100'>
                   <div className='flex items-center gap-3'>
                     <Package className='text-red-600' size={20} />
-                    <span className='font-bold text-gray-900 uppercase'>Mã đơn: Seven-{order.id}</span>
+                    <span className='font-bold text-gray-900 uppercase'>Mã đơn: Seven-{order._id.substring(order._id.length - 6)}</span>
                   </div>
                   {renderStatusBadge(order.status)}
                 </div>
@@ -179,14 +182,16 @@ export default function Orders() {
                 <div className='p-6 space-y-4'>
                   {order.items.map((item, idx) => (
                     <div key={idx} className='flex gap-4 items-start sm:items-center'>
-                      <img src={item.image} className='w-20 h-20 object-cover rounded-2xl bg-gray-100' />
+                      <img src={item.image || 'https://via.placeholder.com/300x300'} className='w-20 h-20 object-cover rounded-2xl bg-gray-100' />
                       <div className='flex-1'>
-                        <h4 className='font-bold text-gray-900 line-clamp-1'>{item.name}</h4>
+                        <h4 className='font-bold text-gray-900 line-clamp-1'>
+                          {item.name || (typeof item.variant_id === 'object' ? item.variant_id?.name || item.variant_id?.sku : '') || 'Sản phẩm tiêu chuẩn'}
+                        </h4>
                         <p className='text-sm text-gray-500 mt-1'>Số lượng: x{item.quantity}</p>
-                        <p className='text-red-600 font-bold mt-1 sm:hidden'>{formatCurrency(item.price)}</p>
+                        <p className='text-red-600 font-bold mt-1 sm:hidden'>{formatCurrency(item.price || order.final_price / item.quantity)}</p>
                       </div>
                       <div className='hidden sm:block text-right'>
-                        <p className='font-bold text-gray-900'>{formatCurrency(item.price)}</p>
+                        <p className='font-bold text-gray-900'>{formatCurrency(item.price || order.final_price / item.quantity)}</p>
                       </div>
                     </div>
                   ))}
@@ -194,13 +199,13 @@ export default function Orders() {
 
                 <div className='px-6 py-5 bg-white border-t border-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4'>
                   <div className='text-sm text-gray-500 italic'>
-                    Ngày đặt: {order.created_at} • {order.payment_status === 'paid' ? 'Đã thanh toán' : 'Thanh toán khi nhận hàng'}
+                    Ngày đặt: {new Date(order.createdAt || '').toLocaleDateString('vi-VN')} • {order.payment_status === 'paid' ? 'Đã thanh toán' : 'Thanh toán trực tuyến VNPay / COD'}
                   </div>
                   
                   <div className='flex flex-wrap justify-center gap-3 w-full sm:w-auto'>
                     {order.status === 'pending' && (
                       <button 
-                        onClick={() => setCancelModal({ isOpen: true, orderId: order.id })}
+                        onClick={() => setCancelModal({ isOpen: true, orderId: order._id })}
                         className='flex-1 sm:flex-none px-6 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition'
                       >
                         Hủy đơn hàng
@@ -210,7 +215,7 @@ export default function Orders() {
                     {order.status === 'delivered' && (
                       <>
                         <button 
-                          onClick={() => navigate(`/orders/${order.id}/return`)}
+                          onClick={() => navigate(`/orders/${order._id}/return`)}
                           className='flex-1 sm:flex-none px-6 py-2.5 rounded-xl border border-orange-200 text-orange-600 font-bold text-sm hover:bg-orange-50 transition'
                         >
                           Trả hàng/Hoàn tiền
@@ -222,7 +227,7 @@ export default function Orders() {
                     )}
 
                     <button 
-                      onClick={() => navigate(`/orders/${order.id}`)}
+                      onClick={() => navigate(`/orders/${order._id}`)}
                       className='flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-black transition'
                     >
                       Chi tiết đơn

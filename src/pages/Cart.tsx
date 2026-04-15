@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fetchClient } from '../api/fetchClient';
 import {
   Trash2,
   Plus,
@@ -17,85 +18,106 @@ import {
 
 // --- TYPES & MOCK DATA ---
 interface Address {
-  id: number
+  _id?: string
+  id?: number | string
   receiver_name: string
   phone: string
   detail: string
   ward: string
   district: string
   province: string
-  is_default: boolean
+  is_default?: boolean
 }
 
-const mockAddresses: Address[] = [
-  {
-    id: 1,
-    receiver_name: 'Tùng HT',
-    phone: '0987 654 321',
-    detail: 'Số 1, đường Linh Đông',
-    ward: 'P. Linh Đông',
-    district: 'Thủ Đức',
-    province: 'TP. Hồ Chí Minh',
-    is_default: true
-  },
-  {
-    id: 2,
-    receiver_name: 'Tùng HT (Văn phòng)',
-    phone: '0123 456 789',
-    detail: 'Số 123, đường Lê Duẩn',
-    ward: 'P. Bến Nghé',
-    district: 'Quận 1',
-    province: 'TP. Hồ Chí Minh',
-    is_default: false
-  }
-]
+// Giữ lại mock để render tạm nếu BE chưa có data
+const mockAddresses: Address[] = []
 
 interface CartItem {
-  id: number
-  variant_id: number
-  name: string
-  variant: string
-  price: number
-  oldPrice: number
+  _id?: string
+  id?: number | string
+  variant_id?: string | Record<string, unknown>
+  product_id?: string | Record<string, unknown>
+  name?: string
+  variant?: string
+  price?: number
+  oldPrice?: number
   quantity: number
-  image: string
-  selected: boolean
+  image?: string
+  selected?: boolean
 }
 
-const initialCartItems: CartItem[] = [
-  {
-    id: 1,
-    variant_id: 101,
-    name: 'iPhone 15 Pro Max',
-    variant: 'Titan Tự nhiên | 256GB',
-    price: 29990000,
-    oldPrice: 34990000,
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1696446701796-da61225697cc?w=500&q=80',
-    selected: true
-  },
-  {
-    id: 2,
-    variant_id: 105,
-    name: 'MacBook Air M3 2024',
-    variant: 'Space Gray | 16GB RAM | 512GB SSD',
-    price: 32990000,
-    oldPrice: 34990000,
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&q=80',
-    selected: false
-  }
-]
+const initialCartItems: CartItem[] = []
 
 // --- MAIN COMPONENT ---
 const Cart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>(initialCartItems);
-  const [addresses] = useState<Address[]>(mockAddresses);
+  const [addresses, setAddresses] = useState<Address[]>(mockAddresses);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   
-  const [selectedAddress, setSelectedAddress] = useState<Address>(
-    addresses.find((addr) => addr.is_default) || addresses[0]
-  );
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+
+  useEffect(() => {
+    const loadCheckoutData = async () => {
+      setIsLoading(true);
+      try {
+        // Gọi cả 2 API song song
+        const [cartRes, addrRes] = await Promise.all([
+           fetchClient<Record<string, unknown>>('/cart').catch(() => null),
+           fetchClient<Record<string, unknown>>('/address').catch(() => null)
+        ]);
+
+        // Cập nhật Address (Vét cạn mọi cấu trúc JSON)
+        let loadedAddresses: Address[] = [];
+        if (addrRes) {
+           if (Array.isArray(addrRes)) loadedAddresses = addrRes as Address[];
+           else if (addrRes.data && Array.isArray(addrRes.data)) loadedAddresses = addrRes.data as Address[];
+           else if (addrRes.addresses && Array.isArray(addrRes.addresses)) loadedAddresses = addrRes.addresses as Address[];
+           else if (addrRes.results && Array.isArray(addrRes.results)) loadedAddresses = addrRes.results as Address[];
+        }
+        
+        setAddresses(loadedAddresses);
+        if (loadedAddresses.length > 0) {
+           setSelectedAddress(loadedAddresses.find(a => a.is_default) || loadedAddresses[0]);
+        }
+
+        // Cập nhật Cart
+        let loadedCartItems: CartItem[] = [];
+        if (cartRes?.data?.items) {
+           loadedCartItems = cartRes.data.items;
+        } else if (Array.isArray(cartRes?.data)) {
+           loadedCartItems = cartRes.data;
+        } else if (Array.isArray(cartRes)) {
+           loadedCartItems = cartRes;
+        }
+        
+        // Setup thông số ảo mặc định cho render
+        const processedItems = loadedCartItems.map((item) => {
+           // Ép kiểu an toàn để trích xuất name/image từ product_id và variant_id
+           const pId = item.product_id as Record<string, unknown> | undefined;
+           const vId = item.variant_id as Record<string, unknown> | undefined;
+
+           return {
+             ...item,
+             id: item._id || item.id || Math.random().toString(),
+             selected: true,
+             name: item.name || (pId?.name as string) || (vId?.name as string) || 'Sản phẩm từ Server',
+             price: item.price || 15000000,
+             oldPrice: item.oldPrice || 17000000,
+             image: item.image || (pId?.image as string) || 'https://via.placeholder.com/150',
+             variant: item.variant || (vId?.sku as string) || 'Tiêu chuẩn'
+           };
+        });
+        setCartItems(processedItems);
+
+      } catch (error) {
+        console.error('Lỗi khi load Checkout Data', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadCheckoutData();
+  }, []);
   
   // States quản lý Popup
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -103,6 +125,94 @@ const Cart = () => {
   
   // Popup tạo địa chỉ
   const [isAddNewAddressOpen, setIsAddNewAddressOpen] = useState(false);
+  const [newAddrName, setNewAddrName] = useState("");
+  const [newAddrPhone, setNewAddrPhone] = useState("");
+  const [newAddrDetail, setNewAddrDetail] = useState("");
+  const [isNewAddrDefault, setIsNewAddrDefault] = useState(false);
+
+  // Tỉnh/Thành API States
+  const [provinces, setProvinces] = useState<Record<string, unknown>[]>([]);
+  const [districts, setDistricts] = useState<Record<string, unknown>[]>([]);
+  const [wards, setWards] = useState<Record<string, unknown>[]>([]);
+  
+  const [selectedProvCode, setSelectedProvCode] = useState("");
+  const [selectedDistCode, setSelectedDistCode] = useState("");
+  const [selectedWardCode, setSelectedWardCode] = useState("");
+
+  useEffect(() => {
+    if (isAddNewAddressOpen && provinces.length === 0) {
+      fetch('https://provinces.open-api.vn/api/?depth=3')
+        .then(r => r.json())
+        .then(data => setProvinces(data))
+        .catch(console.error);
+    }
+  }, [isAddNewAddressOpen, provinces.length]);
+
+  const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const code = e.target.value;
+    setSelectedProvCode(code);
+    setSelectedDistCode("");
+    setSelectedWardCode("");
+    const prov = provinces.find((p: Record<string, unknown>) => p.code == code);
+    setDistricts(prov ? (prov.districts as Record<string, unknown>[]) : []);
+    setWards([]);
+  };
+
+  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const code = e.target.value;
+    setSelectedDistCode(code);
+    setSelectedWardCode("");
+    const dist = districts.find((d: Record<string, unknown>) => d.code == code);
+    setWards(dist ? (dist.wards as Record<string, unknown>[]) : []);
+  };
+
+  const handleCreateAddress = async () => {
+    if (!newAddrName || !newAddrPhone || !selectedProvCode || !selectedDistCode || !selectedWardCode || !newAddrDetail) {
+      alert("Vui lòng nhập đầy đủ thông tin (Tên, SĐT, Tỉnh, Quận, Phường, Địa chỉ cụ thể)!");
+      return;
+    }
+    const prov = provinces.find(p => p.code == selectedProvCode)?.name;
+    const dist = districts.find(d => d.code == selectedDistCode)?.name;
+    const ward = wards.find(w => w.code == selectedWardCode)?.name;
+
+    try {
+      await fetchClient('/address', {
+        method: 'POST',
+        body: JSON.stringify({
+          receiver_name: newAddrName,
+          phone: newAddrPhone,
+          province: prov,
+          district: dist,
+          ward: ward,
+          detail: newAddrDetail,
+          is_default: isNewAddrDefault
+        })
+      });
+      // Reload danh bạ địa chỉ (vét cạn format)
+      const addrRes = await fetchClient<Record<string, unknown>>('/address').catch(() => null);
+      let loadedAddresses: Address[] = [];
+      if (addrRes) {
+         if (Array.isArray(addrRes)) loadedAddresses = addrRes as Address[];
+         else if (addrRes.data && Array.isArray(addrRes.data)) loadedAddresses = addrRes.data as Address[];
+         else if (addrRes.addresses && Array.isArray(addrRes.addresses)) loadedAddresses = addrRes.addresses as Address[];
+         else if (addrRes.results && Array.isArray(addrRes.results)) loadedAddresses = addrRes.results as Address[];
+      }
+      
+      setAddresses(loadedAddresses);
+      if (loadedAddresses.length > 0) {
+        // Tự động chọn địa chỉ vừa tạo (thường nằm cuối danh sách)
+        setSelectedAddress(loadedAddresses[loadedAddresses.length - 1]);
+      }
+      setIsAddNewAddressOpen(false);
+      
+      // Clear form
+      setNewAddrName(""); setNewAddrPhone(""); setNewAddrDetail(""); 
+      setSelectedProvCode(""); setSelectedDistCode(""); setSelectedWardCode("");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Lỗi Server";
+      alert("Tạo địa chỉ thất bại: " + msg);
+    }
+  };
 
   // --- STATE QUẢN LÝ VOUCHER ---
   const [voucherCode, setVoucherCode] = useState('');
@@ -134,13 +244,39 @@ const Cart = () => {
     )
   }
 
-  const removeItem = (id: number) => {
-    setCartItems(cartItems.filter((item) => item.id !== id))
+  const removeItem = async (id: string | number) => {
+    const itemToRemove = cartItems.find((item) => item.id === id);
+    if (!itemToRemove) return;
+
+    // Lấy variant_id thật: có thể là object {_id} hoặc string trực tiếp
+    const vId = (itemToRemove.variant_id as Record<string, unknown>)?._id || itemToRemove.variant_id;
+
+    try {
+      // 1. Gọi API xóa trên Server
+      await fetchClient('/cart/remove', {
+        method: 'DELETE',
+        body: JSON.stringify({ variant_id: vId })
+      });
+
+      // 2. Cập nhật UI cục bộ
+      setCartItems(cartItems.filter((item) => item.id !== id));
+
+      // 3. Bắn event để Header load lại con số badge thực tế
+      window.dispatchEvent(new Event('cartChanged'));
+
+    } catch (error) {
+      console.error('Lỗi xóa sản phẩm:', error);
+      alert('Không thể xóa sản phẩm khỏi giỏ hàng. Vui lòng thử lại!');
+    }
   };
 
   const handleOpenCheckout = () => {
     if (selectedCount === 0) {
       alert('Vui lòng chọn ít nhất một sản phẩm để thanh toán!')
+      return;
+    }
+    if (!selectedAddress) {
+      alert('Vui lòng tạo một địa chỉ nhận hàng trước khi thanh toán!');
       return;
     }
     setIsCheckoutModalOpen(true);
@@ -162,6 +298,34 @@ const Cart = () => {
       setAppliedVoucher(null);
     }
   };
+
+  // --- LOGIC XÁC NHẬN MUA HÀNG ---
+  const handleConfirmOrder = async () => {
+    if (!selectedAddress) {
+      alert("Bạn chưa chọn Địa chỉ giao hàng!");
+      return;
+    }
+    
+    try {
+      const orderRes = await fetchClient<{paymentUrl?: string, _id?: string}>('/order/create', {
+        method: 'POST',
+        body: JSON.stringify({
+          address_id: selectedAddress._id || selectedAddress.id,
+          voucher_id: appliedVoucher ? appliedVoucher.code : undefined
+        })
+      });
+      
+      // Chuyển hướng thanh toán VNPAY nếu Server trả về paymentUrl
+      if (orderRes?.paymentUrl) {
+         window.location.href = orderRes.paymentUrl;
+      } else {
+         navigate('/order-success/' + (orderRes?._id || 'SUCCESS'));
+      }
+    } catch (error) {
+      console.error("Checkout Failed", error);
+      alert('Có lỗi xảy ra khi tạo đơn hàng. Server phản hồi lỗi từ VNPAY hoặc thiếu dữ liệu.');
+    }
+  }
 
   // Các biến tính toán tiền
   const selectedItems = cartItems.filter((item) => item.selected)
@@ -187,6 +351,14 @@ const Cart = () => {
   const finalCheckoutPrice = totalPrice + shippingFee - voucherDiscountAmount > 0 ? totalPrice + shippingFee - voucherDiscountAmount : 0;
 
   // --- GIAO DIỆN ---
+  if (isLoading) {
+    return (
+      <div className='min-h-[70vh] flex flex-col items-center justify-center bg-gray-50'>
+        <p className="text-gray-500 font-medium animate-pulse">Đang tải giỏ hàng từ máy chủ...</p>
+      </div>
+    )
+  }
+
   if (cartItems.length === 0) {
     return (
       <div className='min-h-[70vh] flex flex-col items-center justify-center bg-gray-50'>
@@ -269,8 +441,14 @@ const Cart = () => {
                 <button onClick={() => setIsAddressModalOpen(true)} className="text-sm text-blue-600 font-medium hover:text-blue-700 transition">Thay đổi</button>
               </div>
               <div className="text-sm">
-                <p className="font-bold text-gray-900">{selectedAddress.receiver_name} | {selectedAddress.phone}</p>
-                <p className="text-gray-600 mt-1">{`${selectedAddress.detail}, ${selectedAddress.ward}, ${selectedAddress.district}, ${selectedAddress.province}`}</p>
+                {selectedAddress ? (
+                   <>
+                     <p className="font-bold text-gray-900">{selectedAddress.receiver_name} | {selectedAddress.phone}</p>
+                     <p className="text-gray-600 mt-1">{`${selectedAddress.detail}, ${selectedAddress.ward}, ${selectedAddress.district}, ${selectedAddress.province}`}</p>
+                   </>
+                ) : (
+                   <p className="text-red-500 font-bold italic">Chưa có địa chỉ. Vui lòng thêm mới!</p>
+                )}
               </div>
             </div>
 
@@ -359,49 +537,58 @@ const Cart = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-gray-700">Họ và tên</label>
-                  <input type="text" placeholder="Tên người nhận" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] focus:ring-1 focus:ring-[#E7000B]" />
+                  <input type="text" value={newAddrName} onChange={e => setNewAddrName(e.target.value)} placeholder="Tên người nhận" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] focus:ring-1 focus:ring-[#E7000B]" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-gray-700">Số điện thoại</label>
-                  <input type="text" placeholder="Số điện thoại" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] focus:ring-1 focus:ring-[#E7000B]" />
+                  <input type="text" value={newAddrPhone} onChange={e => setNewAddrPhone(e.target.value)} placeholder="Số điện thoại" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] focus:ring-1 focus:ring-[#E7000B]" />
                 </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-gray-700">Tỉnh/Thành</label>
-                  <select className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] bg-white text-sm">
-                    <option>Chọn Tỉnh/Thành</option>
+                  <select value={selectedProvCode} onChange={handleProvinceChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] bg-white text-sm">
+                    <option value="">Chọn Tỉnh/Thành</option>
+                    {provinces.map((p) => (
+                      <option key={p.code} value={p.code}>{p.name}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-gray-700">Quận/Huyện</label>
-                  <select className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] bg-white text-sm">
-                    <option>Chọn Quận/Huyện</option>
+                  <select value={selectedDistCode} onChange={handleDistrictChange} disabled={!selectedProvCode} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] bg-white text-sm disabled:bg-gray-100 cursor-pointer disabled:cursor-not-allowed">
+                    <option value="">Chọn Quận/Huyện</option>
+                    {districts.map((d) => (
+                      <option key={d.code} value={d.code}>{d.name}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-gray-700">Phường/Xã</label>
-                  <select className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] bg-white text-sm">
-                    <option>Chọn Phường/Xã</option>
+                  <select value={selectedWardCode} onChange={(e) => setSelectedWardCode(e.target.value)} disabled={!selectedDistCode} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] bg-white text-sm disabled:bg-gray-100 cursor-pointer disabled:cursor-not-allowed">
+                    <option value="">Chọn Phường/Xã</option>
+                    {wards.map((w) => (
+                      <option key={w.code} value={w.code}>{w.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-gray-700">Địa chỉ cụ thể</label>
-                <input type="text" placeholder="Số nhà, Tên đường, Tòa nhà..." className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] focus:ring-1 focus:ring-[#E7000B]" />
+                <input type="text" value={newAddrDetail} onChange={e => setNewAddrDetail(e.target.value)} placeholder="Số nhà, Tên đường, Tòa nhà..." className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] focus:ring-1 focus:ring-[#E7000B]" />
               </div>
 
               <div className="flex items-center gap-2 mt-4">
-                <input type="checkbox" id="defaultAddr" className="w-4 h-4 accent-[#E7000B] cursor-pointer rounded" />
+                <input type="checkbox" checked={isNewAddrDefault} onChange={e => setIsNewAddrDefault(e.target.checked)} id="defaultAddr" className="w-4 h-4 accent-[#E7000B] cursor-pointer rounded" />
                 <label htmlFor="defaultAddr" className="text-sm text-gray-700 cursor-pointer">Đặt làm địa chỉ mặc định</label>
               </div>
             </div>
 
             <div className="border-t border-gray-100 pt-5 mt-6 flex gap-3">
               <button onClick={() => setIsAddNewAddressOpen(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Hủy bỏ</button>
-              <button onClick={() => setIsAddNewAddressOpen(false)} className="flex-1 py-3 bg-[#E7000B] text-white font-bold rounded-xl hover:bg-[#C10008] transition shadow-lg shadow-red-100">Lưu địa chỉ</button>
+              <button onClick={handleCreateAddress} className="flex-1 py-3 bg-[#E7000B] text-white font-bold rounded-xl hover:bg-[#C10008] transition shadow-lg shadow-red-100">Lưu địa chỉ</button>
             </div>
           </div>
         </div>
@@ -431,8 +618,14 @@ const Cart = () => {
                   <h3 className="text-lg font-bold text-gray-900 mb-4">1. Thông tin nhận hàng</h3>
                   <div className="border border-gray-200 rounded-xl p-4 flex justify-between items-start">
                     <div>
-                      <p className="font-semibold text-gray-900 text-base">{selectedAddress.receiver_name} <span className="text-gray-400 font-normal mx-2">|</span> {selectedAddress.phone}</p>
-                      <p className="text-gray-600 mt-1.5 text-sm leading-relaxed">{`${selectedAddress.detail}, ${selectedAddress.ward}, ${selectedAddress.district}, ${selectedAddress.province}`}</p>
+                      {selectedAddress ? (
+                         <>
+                           <p className="font-semibold text-gray-900 text-base">{selectedAddress.receiver_name} <span className="text-gray-400 font-normal mx-2">|</span> {selectedAddress.phone}</p>
+                           <p className="text-gray-600 mt-1.5 text-sm leading-relaxed">{`${selectedAddress.detail}, ${selectedAddress.ward}, ${selectedAddress.district}, ${selectedAddress.province}`}</p>
+                         </>
+                      ) : (
+                         <p className="text-red-500 font-bold italic">Chưa có địa chỉ. Vui lòng thêm mới!</p>
+                      )}
                     </div>
                     <button onClick={() => setIsAddressModalOpen(true)} className="text-[#E7000B] text-sm font-medium hover:underline flex-shrink-0">
                       Thay đổi
@@ -561,7 +754,7 @@ const Cart = () => {
 
                 {/* Nút Đặt Hàng */}
                 <div className="p-5 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                  <button onClick={() => navigate('/order-success/SEVEN-9999')} className="w-full bg-[#E7000B] text-white py-3.5 rounded-xl font-bold text-lg hover:bg-[#C10008] transition shadow-lg shadow-red-200 flex items-center justify-center gap-2">
+                  <button onClick={handleConfirmOrder} className="w-full bg-[#E7000B] text-white py-3.5 rounded-xl font-bold text-lg hover:bg-[#C10008] transition shadow-lg shadow-red-200 flex items-center justify-center gap-2">
                     Xác nhận đặt hàng
                   </button>
                   <p className="text-center text-xs text-gray-500 mt-3">

@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Search, ShoppingCart, User } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import AuthModal from './AuthModal'
+import { USER_INFO_KEY } from '../api/config'
+import { API_BASE_URL } from '../api/config'
 
 function Header() {
   const [keyword, setKeyword] = useState('')
-  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [suggestions, setSuggestions] = useState<Array<{ _id: string; name: string; thumbnail?: string }>>([]);
+  const [isSearching, setIsSearching] = useState(false)
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const navigate = useNavigate()
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authInitialView, setAuthInitialView] = useState<'login' | 'register'>('login')
@@ -13,14 +17,8 @@ function Header() {
   // --- STATE MỚI: Quản lý số lượng giỏ hàng ---
   const [cartCount, setCartCount] = useState(0)
 
-  const fakeData = [
-    'iPhone 15 Pro Max',
-    'iPhone 14 Pro',
-    'Samsung S25 Ultra',
-    'MacBook Air M3',
-    'Apple Watch Series 9',
-    'Tai nghe AirPods Pro'
-  ]
+  // --- STATE MỚI: Quản lý đăng nhập Profile ---
+  const [userInfo, setUserInfo] = useState<Record<string, unknown> | null>(null)
 
   const openAuthModal = (view: 'login' | 'register') => {
     setAuthInitialView(view)
@@ -44,17 +42,66 @@ function Header() {
     }
   }, [])
 
-  // --- LẮNG NGHE SỰ KIỆN: Tăng số lượng giỏ hàng ---
+  // Lắng nghe sự kiện đăng nhập thành công
   useEffect(() => {
-    const handleAddToCart = () => {
-      setCartCount((prevCount) => prevCount + 1)
+    const loadUserInfo = () => {
+      const raw = localStorage.getItem(USER_INFO_KEY)
+      if (raw) {
+        try { setUserInfo(JSON.parse(raw)) } catch { setUserInfo(null) }
+      } else {
+        setUserInfo(null)
+      }
     }
 
-    // Đăng ký sự kiện 'addToCart'
-    window.addEventListener('addToCart', handleAddToCart)
+    loadUserInfo() // Load lúc mới vào trang
+    window.addEventListener('authChange', loadUserInfo)
+    return () => window.removeEventListener('authChange', loadUserInfo)
+  }, [])
 
-    // Dọn dẹp sự kiện
-    return () => window.removeEventListener('addToCart', handleAddToCart)
+  // --- LẮNG NGHE SỰ KIỆN: Đồng bộ số lượng giỏ hàng thực tế ---
+  const refreshCartCount = async () => {
+    const rawToken = localStorage.getItem('accessToken')
+    if (!rawToken) {
+      setCartCount(0)
+      return
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/cart`, {
+        headers: { 'Authorization': `Bearer ${rawToken}` }
+      })
+      const data = await res.json()
+      
+      // Vét cạn cấu trúc để tìm mảng items
+      let items: Record<string, unknown>[] = []
+      if (Array.isArray(data)) items = data as Record<string, unknown>[]
+      else if (data?.data?.items) items = data.data.items as Record<string, unknown>[]
+      else if (data?.items) items = data.items as Record<string, unknown>[]
+      else if (data?.data && Array.isArray(data.data)) items = data.data as Record<string, unknown>[]
+
+      // Tính tổng số lượng (quantity) của tất cả item
+      const total = items.reduce((sum: number, item: Record<string, unknown>) => sum + ((item.quantity as number) || 1), 0)
+      setCartCount(total)
+    } catch (error) {
+      console.error('Không thể lấy số lượng giỏ hàng:', error)
+    }
+  }
+
+  useEffect(() => {
+    refreshCartCount() // Load lần đầu khi mở web
+
+    const handleUpdate = () => refreshCartCount()
+    
+    // Lắng nghe cả sự kiện cũ (addToCart) và sự kiện mới (cartChanged) cho chắc chắn
+    window.addEventListener('addToCart', handleUpdate)
+    window.addEventListener('cartChanged', handleUpdate)
+    window.addEventListener('authChange', handleUpdate) // Khi login/logout cũng phải reset số
+
+    return () => {
+      window.removeEventListener('addToCart', handleUpdate)
+      window.removeEventListener('cartChanged', handleUpdate)
+      window.removeEventListener('authChange', handleUpdate)
+    }
   }, [])
 
   const handleSearch = (value: string) => {
@@ -63,8 +110,23 @@ function Header() {
       setSuggestions([])
       return
     }
-    const result = fakeData.filter((item) => item.toLowerCase().includes(value.toLowerCase()))
-    setSuggestions(result)
+
+    // Debounce: Chờ 500ms sau khi ngừng gõ mới gọi API
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    debounceTimer.current = setTimeout(async () => {
+      setIsSearching(true)
+      try {
+        const res = await fetch(`${API_BASE_URL}/products/search?q=${encodeURIComponent(value)}`)
+        const data = await res.json()
+        // Vét cạn cấu trúc JSON trả về
+        const products = Array.isArray(data) ? data : (data?.data || data?.products || data?.results || [])
+        setSuggestions(products.slice(0, 6)) // Chỉ hiện tối đa 6 gợi ý
+      } catch {
+        setSuggestions([])
+      } finally {
+        setIsSearching(false)
+      }
+    }, 500)
   }
 
   return (
@@ -90,16 +152,21 @@ function Header() {
             />
             {suggestions.length > 0 && (
               <div className='absolute top-full left-0 w-full bg-white text-black rounded-xl shadow-lg mt-2 z-50 overflow-hidden'>
-                {suggestions.map((item, index) => (
+                {isSearching && <p className='px-4 py-2 text-sm text-gray-400 animate-pulse'>Đang tìm kiếm...</p>}
+                {suggestions.map((item) => (
                   <div
-                    key={index}
+                    key={item._id}
                     onClick={() => {
-                      setKeyword(item)
+                      setKeyword(item.name)
                       setSuggestions([])
+                      navigate(`/products?q=${encodeURIComponent(item.name)}`)
                     }}
-                    className='px-4 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-none'
+                    className='px-4 py-2.5 hover:bg-gray-50 cursor-pointer border-b last:border-none flex items-center gap-3'
                   >
-                    {item}
+                    {item.thumbnail && (
+                      <img src={item.thumbnail} alt={item.name} className='w-8 h-8 object-cover rounded-lg flex-shrink-0 bg-gray-100' />
+                    )}
+                    <span className='text-sm text-gray-800 font-medium line-clamp-1'>{item.name}</span>
                   </div>
                 ))}
               </div>
@@ -108,21 +175,35 @@ function Header() {
         </div>
 
         <div className='flex items-center gap-6 font-medium'>
-          <button
-            onClick={() => openAuthModal('login')}
-            className='flex items-center gap-2 hover:text-yellow-300 transition'
-          >
-            <User size={18} />
-            <span className='hidden sm:inline'>Đăng nhập</span>
-          </button>
+          {!userInfo ? (
+            <>
+              <button
+                onClick={() => openAuthModal('login')}
+                className='flex items-center gap-2 hover:text-yellow-300 transition'
+              >
+                <User size={18} />
+                <span className='hidden sm:inline'>Đăng nhập</span>
+              </button>
 
-          <button
-            onClick={() => openAuthModal('register')}
-            className='flex items-center gap-2 hover:text-yellow-300 transition'
-          >
-            <User size={18} />
-            <span className='hidden sm:inline'>Đăng ký</span>
-          </button>
+              <button
+                onClick={() => openAuthModal('register')}
+                className='flex items-center gap-2 hover:text-yellow-300 transition'
+              >
+                <User size={18} />
+                <span className='hidden sm:inline'>Đăng ký</span>
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => navigate('/profile')}
+              className='flex items-center gap-2 hover:text-yellow-300 transition group'
+            >
+              <div className="w-8 h-8 flex items-center justify-center rounded-full overflow-hidden border-2 border-white/30 group-hover:border-yellow-300 bg-white/20 transition">
+                <User size={18} />
+              </div>
+              <span className='hidden sm:inline font-bold truncate max-w-[120px]'>{userInfo.username || 'Người dùng'}</span>
+            </button>
+          )}
 
           <button
             onClick={() => navigate('/cart')}
@@ -137,16 +218,6 @@ function Header() {
                 {cartCount}
               </span>
             )}
-          </button>
-
-          <button
-            onClick={() => navigate('/profile')}
-            className='flex items-center gap-2 hover:text-yellow-300 transition group'
-          >
-            <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/30 group-hover:border-yellow-300 transition">
-              <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100" alt="Avatar" className="w-full h-full object-cover" />
-            </div>
-            <span className='hidden sm:inline font-bold'>Huong Tran</span>
           </button>
         </div>
       </div>

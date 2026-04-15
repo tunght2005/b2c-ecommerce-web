@@ -1,9 +1,44 @@
-import { NavLink, Outlet } from 'react-router-dom';
-import { User, Package, Bell, LogOut, Camera } from 'lucide-react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { User, Package, Bell, LogOut, Camera, MapPin } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { fetchClient } from '../api/fetchClient';
+import { TOKEN_KEY, REFRESH_TOKEN_KEY, USER_INFO_KEY } from '../api/config';
 
 export default function ProfileLayout() {
+  const navigate = useNavigate();
+  const [displayName, setDisplayName] = useState('Người dùng');
+
+  useEffect(() => {
+    const raw = localStorage.getItem(USER_INFO_KEY);
+    if (raw) {
+      try {
+        const info = JSON.parse(raw);
+        setDisplayName(info.username || info.email || 'Người dùng');
+      } catch { /* skip */ }
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      // Gọi API logout để Server hủy refresh token
+      await fetchClient('/auth/logout', { method: 'POST' }).catch(() => {});
+    } finally {
+      // Dù API thành hay bại, xóa sạch localStorage phía Client
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      localStorage.removeItem(USER_INFO_KEY);
+
+      // Bắn event để Header tự cập nhật lại UI
+      window.dispatchEvent(new Event('authChange'));
+
+      // Chuyển về trang chủ
+      navigate('/');
+    }
+  };
+
   const menuItems = [
     { name: 'Quản lý tài khoản', path: '/profile', icon: User, exact: true },
+    { name: 'Địa chỉ của tôi', path: '/profile/addresses', icon: MapPin, exact: false },
     { name: 'Đơn mua của tôi', path: '/profile/orders', icon: Package, exact: false },
     { name: 'Thông báo', path: '/profile/notifications', icon: Bell, exact: false },
   ];
@@ -27,7 +62,7 @@ export default function ProfileLayout() {
                 <Camera className="text-white" size={24} />
               </div>
             </div>
-            <h2 className="font-bold text-lg text-gray-900">Huong Tran</h2>
+            <h2 className="font-bold text-lg text-gray-900">{displayName}</h2>
             <p className="text-sm text-gray-500 mt-1">Khách hàng thành viên</p>
           </div>
 
@@ -52,7 +87,10 @@ export default function ProfileLayout() {
 
             <div className="my-2 border-t border-gray-50"></div>
             
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all"
+            >
               <LogOut size={20} />
               Đăng xuất
             </button>

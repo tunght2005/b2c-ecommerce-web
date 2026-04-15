@@ -18,6 +18,7 @@ import OrderSuccess from './pages/OrderSuccess'
 
 import ProfileLayout from './components/ProfileLayout'
 import ProfileInfo from './pages/ProfileInfo'
+import ProfileAddresses from './pages/ProfileAddresses'
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
         <Route path='/profile' element={<ProfileLayout />}>
           <Route index element={<ProfileInfo />} />
           <Route path='orders' element={<Orders />} />
+          <Route path='addresses' element={<ProfileAddresses />} />
         </Route>
 
         {/* ORDER DETAILS & ACTIONS (Full Screen) */}
