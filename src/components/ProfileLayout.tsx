@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { User, Package, Bell, LogOut, Camera, MapPin } from 'lucide-react';
+import { User, Package, Bell, LogOut, Camera, MapPin, MessageSquare, RotateCcw, Star, Heart, Shield, Ticket } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { fetchClient } from '../api/fetchClient';
 import { TOKEN_KEY, REFRESH_TOKEN_KEY, USER_INFO_KEY } from '../api/config';
@@ -38,8 +38,14 @@ export default function ProfileLayout() {
 
   const menuItems = [
     { name: 'Quản lý tài khoản', path: '/profile', icon: User, exact: true },
-    { name: 'Địa chỉ của tôi', path: '/profile/addresses', icon: MapPin, exact: false },
+    { name: 'Sản phẩm yêu thích', path: '/profile/wishlist', icon: Heart, exact: false },
+    { name: 'Kho Voucher', path: '/profile/promotions', icon: Ticket, exact: false },
     { name: 'Đơn mua của tôi', path: '/profile/orders', icon: Package, exact: false },
+    { name: 'Đánh giá của tôi', path: '/profile/reviews', icon: Star, exact: false },
+    { name: 'Địa chỉ của tôi', path: '/profile/addresses', icon: MapPin, exact: false },
+    { name: 'Lịch sử hỗ trợ', path: '/profile/feedback', icon: MessageSquare, exact: false },
+    { name: 'Lịch sử hoàn trả', path: '/profile/returns', icon: RotateCcw, exact: false },
+    { name: 'Bảo hành thiết bị', path: '/profile/warranty', icon: Shield, exact: false },
     { name: 'Thông báo', path: '/profile/notifications', icon: Bell, exact: false },
   ];
 

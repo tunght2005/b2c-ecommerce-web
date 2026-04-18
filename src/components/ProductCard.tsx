@@ -1,6 +1,8 @@
-import { ShoppingCart, Star } from 'lucide-react'
-import { fetchClient } from '../api/fetchClient'
+import { useState, useEffect } from 'react'
+import { Star } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { resolveImageUrl } from '../api/config'
+import WishlistButton from './WishlistButton'
 
 // Cập nhật Product Interface để khớp Backend + Tự xử lý Fallback
 export type Product = {
@@ -16,49 +18,32 @@ export type Product = {
   variants?: Record<string, unknown>[];
 }
 
-export default function ProductCard({ product }: { product: Product }) {
-  // Hàm bắn sự kiện khi click "Thêm vào giỏ"
-  const handleAddToCart = async () => {
-    // Ép kiểu chống cháy: móc lấy id của Variant đầu tiên, nếu BE rỗng thì đưa ID sp giả dạng
-    const variantIdTarget = product.variants?.[0]?._id || product._id || product.id;
-    
-    try {
-      await fetchClient('/cart/add', {
-        method: 'POST',
-        body: JSON.stringify({
-          variant_id: variantIdTarget,
-          quantity: 1
-        })
-      })
-      window.dispatchEvent(new CustomEvent('addToCart', { detail: { product } }))
-      alert('Đã thêm sản phẩm trực tiếp vào Server!');
-    } catch (error) {
-      // Đề phòng BE cự tuyệt vì truyền lên thiếu variant
-      console.warn('Backend rejected the cart action, firing local fallback', error)
-      alert('Có lỗi. Vui lòng đảm bảo bạn Đã Đăng Nhập hoặc Sản Phẩm đã có Variant thực.')
-    }
-  }
+import { fetchClient } from '../api/fetchClient'
 
-  // --- DEV TOOL TOOL: Hàm tạo Variant khẩn cấp ---
-  const handleDevCreateVariant = async () => {
-    try {
-      await fetchClient('/variants', {
-        method: 'POST',
-        body: JSON.stringify({
-          product_id: product._id || product.id,
-          sku: "ACER-DEFAULT",
-          price: 17500000,
-          old_price: 20000000,
-          stock: 999,
-          attributes: []
-        })
-      });
-      alert('Đã ép tạo Variant Thành Công! Bây giờ bạn hãy F5 (Tải lại trang) rồi bấm Thêm vào giỏ hàng nhé.');
-    } catch (e: unknown) {
-      const errorMsg = e instanceof Error ? e.message : JSON.stringify(e);
-      alert('Tạo thất bại! Lỗi Backend: ' + errorMsg);
+// Cache chống gọi API 50 lần khi render 50 Card cùng lúc
+let promoPromise: Promise<any> | null = null;
+let globalPromo: any = null;
+
+export default function ProductCard({ product }: { product: Product }) {
+  const navigate = useNavigate();
+  const [promo, setPromo] = useState<any>(globalPromo);
+
+  useEffect(() => {
+    if (globalPromo) {
+      setPromo(globalPromo);
+      return;
     }
-  }
+    if (!promoPromise) {
+      promoPromise = fetchClient('/promotions').then((res: any) => {
+        const data = res?.data || res;
+        if (Array.isArray(data)) {
+          globalPromo = data.find((p: any) => p.status !== 'inactive' || p.active || p.is_active) || null;
+        } else { globalPromo = null; }
+        return globalPromo;
+      }).catch(() => null);
+    }
+    promoPromise.then(p => setPromo(p));
+  }, []);
 
   // Lấy ảnh thật từ DB, tự động gán domain nếu cần
   const rawImage = product.thumbnail || product.image || product.variants?.[0]?.image
@@ -82,15 +67,29 @@ export default function ProductCard({ product }: { product: Product }) {
   const finalDiscount = product.discount || (typeof rawPrice === 'number' && typeof rawOldPrice === 'number' && rawOldPrice > 0 ? Math.round(100 - (rawPrice / rawOldPrice) * 100) : 15);
 
   return (
-    <div className='bg-white rounded-2xl p-3 sm:p-4 shadow-md hover:shadow-2xl hover:-translate-y-1 sm:hover:-translate-y-2 transition duration-300 relative border flex flex-col h-full'>
+    <div 
+      onClick={() => navigate('/product/' + (product._id || product.id))}
+      className='bg-white cursor-pointer rounded-2xl p-3 sm:p-4 shadow-md hover:shadow-2xl hover:-translate-y-1 sm:hover:-translate-y-2 transition duration-300 relative border flex flex-col h-full'
+    >
       {/* BADGE (Khuyến mãi) */}
       <div className='absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-500 text-white text-[10px] sm:text-xs px-2 py-1 rounded-full font-semibold z-10'>
         -{finalDiscount}%
       </div>
 
+      {/* NÚT YÊU THÍCH */}
+      <div className='absolute top-2 right-2 sm:top-3 sm:right-3 z-10 bg-white/80 backdrop-blur rounded-full p-1.5 shadow-sm'>
+        <WishlistButton productId={(product._id || product.id) as string} size={16} />
+      </div>
+
       {/* IMAGE */}
-      <div className='bg-gray-100 rounded-xl h-32 sm:h-44 flex items-center justify-center p-2'>
-        <img src={finalImage} alt={product.name} className='h-full object-contain hover:scale-105 transition' />
+      <div className='bg-gray-100 rounded-xl h-32 sm:h-44 flex items-center justify-center p-2 relative overflow-hidden'>
+        <img src={finalImage} alt={product.name} className='h-full object-contain hover:scale-105 transition z-0' />
+        {/* EVENT BANNER BOTTOM */}
+        {promo && (
+           <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-r from-red-600 to-orange-500 text-white text-[9px] sm:text-[10px] font-bold text-center py-1 uppercase tracking-wider z-10 shadow-inner opacity-95'>
+             🎁 ƯU ĐÃI {promo.name}
+           </div>
+        )}
       </div>
 
       {/* CONTENT */}
@@ -112,25 +111,6 @@ export default function ProductCard({ product }: { product: Product }) {
           {finalOldPrice && <span className='text-gray-400 line-through text-[10px] sm:text-sm'>{finalOldPrice}</span>}
         </div>
 
-        {/* Nút Fix lỗi (Xóa sau) */}
-        {(!product.variants || product.variants.length === 0) && (
-          <button 
-             onClick={handleDevCreateVariant}
-             className='w-full mt-2 bg-yellow-400 text-yellow-900 py-1 rounded-lg text-[10px] font-bold hover:bg-yellow-500'
-          >
-            [DEV] Auto Cấp Variant
-          </button>
-        )}
-
-        {/* BUTTON - Đẩy xuống đáy bằng mt-auto */}
-        <button 
-          onClick={handleAddToCart}
-          className='mt-auto pt-2 sm:pt-3 w-full flex items-center justify-center gap-1 sm:gap-2 bg-red-500 text-white py-2 rounded-lg sm:rounded-xl font-semibold hover:bg-red-600 transition text-xs sm:text-base'
-        >
-          <ShoppingCart size={14} className="sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Thêm vào giỏ</span>
-          <span className="sm:hidden">Mua ngay</span> {/* Điện thoại chỉ hiện chữ Mua ngay cho ngắn */}
-        </button>
       </div>
     </div>
   )

@@ -39,7 +39,7 @@ export const fetchClient = async <T>(endpoint: string, options: FetchOptions = {
     if (response.status === 401) {
       console.error('Unauthorized! Token expired or invalid.');
       localStorage.removeItem(TOKEN_KEY);
-      // window.dispatchEvent(new CustomEvent('openAuthModal')); // Mở popup đăng nhập
+      window.dispatchEvent(new CustomEvent('openAuthModal')); // Mở popup đăng nhập
     }
 
     const error = new Error((responseData as Record<string, unknown>)?.message as string || 'Có lỗi xảy ra khi gọi API');

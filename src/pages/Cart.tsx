@@ -13,7 +13,8 @@ import {
   PlusCircle,
   Truck,
   Ticket,
-  Tag // Thêm icon Tag cho Voucher
+  Tag,
+  Loader2
 } from 'lucide-react'
 
 // --- TYPES & MOCK DATA ---
@@ -81,14 +82,15 @@ const Cart = () => {
            setSelectedAddress(loadedAddresses.find(a => a.is_default) || loadedAddresses[0]);
         }
 
-        // Cập nhật Cart
+        // Cập nhật Cart (Vét cạn cấu trúc JSON)
         let loadedCartItems: CartItem[] = [];
-        if (cartRes?.data?.items) {
-           loadedCartItems = cartRes.data.items;
-        } else if (Array.isArray(cartRes?.data)) {
-           loadedCartItems = cartRes.data;
-        } else if (Array.isArray(cartRes)) {
-           loadedCartItems = cartRes;
+        const rawCart = cartRes as any;
+        if (rawCart?.data?.items) {
+           loadedCartItems = rawCart.data.items;
+        } else if (Array.isArray(rawCart?.data)) {
+           loadedCartItems = rawCart.data;
+        } else if (Array.isArray(rawCart)) {
+           loadedCartItems = rawCart;
         }
         
         // Setup thông số ảo mặc định cho render
@@ -216,15 +218,16 @@ const Cart = () => {
 
   // --- STATE QUẢN LÝ VOUCHER ---
   const [voucherCode, setVoucherCode] = useState('');
-  const [appliedVoucher, setAppliedVoucher] = useState<{ code: string, discount: number, type: 'percent' | 'fixed' } | null>(null);
+  const [appliedVoucher, setAppliedVoucher] = useState<{ code: string, discount: number, type: 'percent' | 'fixed', _id?: string } | null>(null);
   const [voucherError, setVoucherError] = useState('');
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
 
   // --- LOGIC HÀM ---
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
-  const handleSelectItem = (id: number) => {
+  const handleSelectItem = (id: string | number) => {
     setCartItems(cartItems.map((item) => (item.id === id ? { ...item, selected: !item.selected } : item)))
   };
 
@@ -232,16 +235,35 @@ const Cart = () => {
     setCartItems(cartItems.map((item) => ({ ...item, selected: checked })))
   };
 
-  const updateQuantity = (id: number, delta: number) => {
-    setCartItems(
-      cartItems.map((item) => {
-        if (item.id === id) {
-          const newQuantity = item.quantity + delta
-          return { ...item, quantity: newQuantity > 0 ? newQuantity : 1 }
-        }
-        return item
-      })
-    )
+  const updateQuantity = async (id: string | number, delta: number) => {
+    const item = cartItems.find(i => i.id === id);
+    if (!item) return;
+    const newQuantity = (item.quantity || 1) + delta;
+    if (newQuantity < 1) return;
+
+    // Cập nhật UI tức thì (Optimistic Update)
+    setCartItems(prev =>
+      prev.map(i => i.id === id ? { ...i, quantity: newQuantity } : i)
+    );
+
+    // Lấy variant_id thật
+    const pId = (item.product_id as Record<string, unknown>)?._id || item.product_id;
+    const vId = (item.variant_id as Record<string, unknown>)?._id || item.variant_id || pId;
+    if (!vId) return; // Nếu không có variant_id thì chỉ cập nhật UI cục bộ thôi
+
+    try {
+      await fetchClient('/cart/update', {
+        method: 'PUT',
+        body: JSON.stringify({ variant_id: vId, quantity: newQuantity })
+      });
+      window.dispatchEvent(new Event('cartChanged'));
+    } catch (error) {
+      // Nếu Server lỗi, rollback lại số lượng cũ
+      console.error('Lỗi cập nhật số lượng:', error);
+      setCartItems(prev =>
+        prev.map(i => i.id === id ? { ...i, quantity: item.quantity } : i)
+      );
+    }
   }
 
   const removeItem = async (id: string | number) => {
@@ -249,7 +271,8 @@ const Cart = () => {
     if (!itemToRemove) return;
 
     // Lấy variant_id thật: có thể là object {_id} hoặc string trực tiếp
-    const vId = (itemToRemove.variant_id as Record<string, unknown>)?._id || itemToRemove.variant_id;
+    const pId = (itemToRemove.product_id as Record<string, unknown>)?._id || itemToRemove.product_id;
+    const vId = (itemToRemove.variant_id as Record<string, unknown>)?._id || itemToRemove.variant_id || pId;
 
     try {
       // 1. Gọi API xóa trên Server
@@ -270,6 +293,39 @@ const Cart = () => {
     }
   };
 
+  const handleBulkRemove = async () => {
+    const selectedItemsToRemove = cartItems.filter(i => i.selected);
+    if (selectedItemsToRemove.length === 0) {
+      alert('Vui lòng chọn ít nhất 1 sản phẩm để tiến hành xóa!');
+      return;
+    }
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa ${selectedItemsToRemove.length} sản phẩm đã chọn khỏi giỏ hàng?`)) return;
+
+    let failedCount = 0;
+    for (const item of selectedItemsToRemove) {
+      const pId = (item.product_id as Record<string, unknown>)?._id || item.product_id;
+      const vId = (item.variant_id as Record<string, unknown>)?._id || item.variant_id || pId;
+      try {
+        await fetchClient('/cart/remove', {
+          method: 'DELETE',
+          body: JSON.stringify({ variant_id: vId })
+        });
+      } catch (e) {
+        failedCount++;
+      }
+    }
+
+    const selectedIds = selectedItemsToRemove.map(i => i.id);
+    setCartItems(prev => prev.filter(i => !selectedIds.includes(i.id)));
+    window.dispatchEvent(new Event('cartChanged'));
+
+    if (failedCount > 0) {
+      alert(`Xóa hoàn tất, nhưng có ${failedCount} sản phẩm bị lỗi phía Backend!`);
+    } else {
+      alert('Đã xóa thành công!');
+    }
+  };
+
   const handleOpenCheckout = () => {
     if (selectedCount === 0) {
       alert('Vui lòng chọn ít nhất một sản phẩm để thanh toán!')
@@ -282,60 +338,111 @@ const Cart = () => {
     setIsCheckoutModalOpen(true);
   };
 
-  // --- LOGIC ÁP DỤNG VOUCHER ---
-  const handleApplyVoucher = () => {
-    setVoucherError('');
-    const code = voucherCode.toUpperCase().trim();
-
-    if (code === 'SEVEN10') {
-      setAppliedVoucher({ code, discount: 10, type: 'percent' });
-      setVoucherCode('');
-    } else if (code === 'FREESHIP') {
-      setAppliedVoucher({ code, discount: 50000, type: 'fixed' });
-      setVoucherCode('');
-    } else {
-      setVoucherError('Mã giảm giá không hợp lệ hoặc đã hết hạn.');
-      setAppliedVoucher(null);
-    }
-  };
-
-  // --- LOGIC XÁC NHẬN MUA HÀNG ---
-  const handleConfirmOrder = async () => {
-    if (!selectedAddress) {
-      alert("Bạn chưa chọn Địa chỉ giao hàng!");
-      return;
-    }
-    
-    try {
-      const orderRes = await fetchClient<{paymentUrl?: string, _id?: string}>('/order/create', {
-        method: 'POST',
-        body: JSON.stringify({
-          address_id: selectedAddress._id || selectedAddress.id,
-          voucher_id: appliedVoucher ? appliedVoucher.code : undefined
-        })
-      });
-      
-      // Chuyển hướng thanh toán VNPAY nếu Server trả về paymentUrl
-      if (orderRes?.paymentUrl) {
-         window.location.href = orderRes.paymentUrl;
-      } else {
-         navigate('/order-success/' + (orderRes?._id || 'SUCCESS'));
-      }
-    } catch (error) {
-      console.error("Checkout Failed", error);
-      alert('Có lỗi xảy ra khi tạo đơn hàng. Server phản hồi lỗi từ VNPAY hoặc thiếu dữ liệu.');
-    }
-  }
-
   // Các biến tính toán tiền
-  const selectedItems = cartItems.filter((item) => item.selected)
+  const selectedItems = cartItems.filter((item) => item.selected);
   const isAllSelected = cartItems.length > 0 && cartItems.every((item) => item.selected);
-  const selectedCount = selectedItems.length
+  const selectedCount = selectedItems.length;
 
   const totalPrice = selectedItems.reduce((total, item) => total + item.price * item.quantity, 0);
   const totalOldPrice = selectedItems.reduce((total, item) => total + item.oldPrice * item.quantity, 0);
   const productDiscountAmount = totalOldPrice - totalPrice; // Giảm giá trực tiếp trên sản phẩm
   const shippingFee = 30000; // Giả sử phí ship 30k để test FREESHIP
+
+  // --- LOGIC ÁP DỤNG VOUCHER THẬT ---
+  const handleApplyVoucher = async () => {
+    setVoucherError('');
+    const code = voucherCode.trim();
+    if (!code) return;
+
+    setIsApplyingVoucher(true);
+    try {
+      const res = await fetchClient<Record<string, unknown>>('/vouchers/apply', {
+        method: 'POST',
+        body: JSON.stringify({ code, cart_total: totalPrice })
+      });
+
+      // BE trả về: { data: { voucher_id, discount_amount, final_price } }
+      const voucher = (res as any)?.data || res;
+      const voucherId = (voucher?.voucher_id as string) || (voucher?._id as string);
+      // Ưu tiên discount_amount từ BE (đã tính chính xác), fallback về tính tay
+      const discountAmount = (voucher?.discount_amount as number) || 0;
+      const discountValue = discountAmount > 0 ? discountAmount : ((voucher?.discount_value as number) || (voucher?.discount as number) || 0);
+      const discountType = discountAmount > 0 ? 'fixed' : ((voucher?.discount_type as string) || 'percent');
+
+      if (!voucherId) {
+        setVoucherError('Không lấy được ID voucher từ server. Vui lòng thử lại!');
+        setAppliedVoucher(null);
+        return;
+      }
+
+      setAppliedVoucher({
+        code: code.toUpperCase(),
+        discount: discountValue,
+        type: discountType === 'fixed' ? 'fixed' : 'percent',
+        _id: voucherId
+      });
+      setVoucherCode('');
+    } catch (err: unknown) {
+      const e = err as Error;
+      setVoucherError(e.message || 'Mã giảm giá không hợp lệ hoặc đã hết hạn.');
+      setAppliedVoucher(null);
+    } finally {
+      setIsApplyingVoucher(false);
+    }
+  };
+
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+
+  // --- LOGIC XÁC NHẬN MUA HÀNG (LUỒNG 2 BƯỚC ĐÚNG CHUẨN) ---
+  const handleConfirmOrder = async () => {
+    if (!selectedAddress) {
+      alert("Bạn chưa chọn Địa chỉ giao hàng!");
+      return;
+    }
+    if (isSubmittingOrder) return; // Tránh bấm nhiều lần
+
+    setIsSubmittingOrder(true);
+    try {
+      // ===== BƯỚC 1: Tạo đơn hàng =====
+      const orderRes = await fetchClient<Record<string, unknown>>('/order/create', {
+        method: 'POST',
+        body: JSON.stringify({
+          address_id: selectedAddress._id || selectedAddress.id,
+          voucher_id: appliedVoucher?._id || undefined
+        })
+      });
+
+      // Vét cạn order_id từ response (BE có thể trả về .data._id hoặc ._id)
+      const rawOrder = (orderRes as any)?.data || orderRes;
+      const orderId = rawOrder?._id as string;
+
+      if (!orderId) {
+        throw new Error('Không lấy được mã đơn hàng từ Server!');
+      }
+
+      // ===== BƯỚC 2: Tạo link thanh toán VNPAY =====
+      const paymentRes = await fetchClient<Record<string, unknown>>('/payment/create-vnpay', {
+        method: 'POST',
+        body: JSON.stringify({ order_id: orderId })
+      });
+
+      const paymentUrl = (paymentRes as any)?.url || (paymentRes as any)?.data?.url as string;
+
+      if (paymentUrl) {
+        // Redirect sang trang thanh toán VNPAY
+        window.location.href = paymentUrl;
+      } else {
+        // Nếu BE không trả về url (thanh toán COD), chuyển thẳng đến trang thành công
+        navigate('/order-success/' + orderId);
+      }
+    } catch (error) {
+      console.error("Checkout Failed", error);
+      const msg = error instanceof Error ? error.message : 'Lỗi không xác định';
+      alert('Có lỗi xảy ra khi đặt hàng: ' + msg);
+    } finally {
+      setIsSubmittingOrder(false);
+    }
+  }
 
   // Tính số tiền được giảm từ Voucher
   let voucherDiscountAmount = 0;
@@ -382,9 +489,34 @@ const Cart = () => {
   return (
     <div className='min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8'>
       <div className='max-w-7xl mx-auto'>
-        <h1 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-          GIỎ HÀNG <span className="text-gray-500 text-lg font-normal">({cartItems.length} sản phẩm)</span>
-        </h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            GIỎ HÀNG <span className="text-gray-500 text-lg font-normal">({cartItems.length} sản phẩm)</span>
+          </h1>
+          <button 
+            onClick={async () => {
+              if (!window.confirm('Khách hàng muốn quét dọn các "sản phẩm ma" bị lỗi không thể xóa?')) return;
+              try {
+                // Quét 100 sản phẩm mới nhất để ép xóa khỏi giỏ
+                const res: any = await fetchClient('/products?limit=100');
+                const products = res?.data?.items || res?.data || res || [];
+                let fixCount = 0;
+                for (const p of products) {
+                  try {
+                    await fetchClient('/cart/remove', { method: 'DELETE', body: JSON.stringify({ variant_id: p._id }) });
+                    fixCount++;
+                  } catch(e) {}
+                }
+                alert('Đã chạy dọn dẹp lỗi! Vui lòng F5 lại trang.');
+              } catch (e) {
+                alert('Dọn dẹp thất bại.');
+              }
+            }}
+            className="text-xs text-blue-500 hover:text-blue-700 underline"
+          >
+            Fix lỗi không xóa được
+          </button>
+        </div>
 
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           
@@ -396,10 +528,7 @@ const Cart = () => {
               <span className="text-sm text-gray-500 ml-auto hidden sm:block">Đơn giá</span>
               <span className="text-sm text-gray-500 mx-16 hidden sm:block">Số lượng</span>
               <span className="text-sm text-gray-500 mr-12 hidden sm:block">Thành tiền</span>
-              <button onClick={() => {
-                  const selectedIds = cartItems.filter(i => i.selected).map(i => i.id);
-                  setCartItems(cartItems.filter(i => !selectedIds.includes(i.id)));
-              }} className="text-gray-400 hover:text-red-500 transition sm:ml-0 ml-auto"><Trash2 size={18} /></button>
+              <button onClick={handleBulkRemove} className="text-gray-400 hover:text-red-500 transition sm:ml-0 ml-auto"><Trash2 size={18} /></button>
             </div>
 
             {cartItems.map((item) => (
@@ -550,7 +679,7 @@ const Cart = () => {
                   <label className="text-sm font-semibold text-gray-700">Tỉnh/Thành</label>
                   <select value={selectedProvCode} onChange={handleProvinceChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] bg-white text-sm">
                     <option value="">Chọn Tỉnh/Thành</option>
-                    {provinces.map((p) => (
+                    {provinces.map((p: any) => (
                       <option key={p.code} value={p.code}>{p.name}</option>
                     ))}
                   </select>
@@ -559,7 +688,7 @@ const Cart = () => {
                   <label className="text-sm font-semibold text-gray-700">Quận/Huyện</label>
                   <select value={selectedDistCode} onChange={handleDistrictChange} disabled={!selectedProvCode} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] bg-white text-sm disabled:bg-gray-100 cursor-pointer disabled:cursor-not-allowed">
                     <option value="">Chọn Quận/Huyện</option>
-                    {districts.map((d) => (
+                    {districts.map((d: any) => (
                       <option key={d.code} value={d.code}>{d.name}</option>
                     ))}
                   </select>
@@ -568,7 +697,7 @@ const Cart = () => {
                   <label className="text-sm font-semibold text-gray-700">Phường/Xã</label>
                   <select value={selectedWardCode} onChange={(e) => setSelectedWardCode(e.target.value)} disabled={!selectedDistCode} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#E7000B] bg-white text-sm disabled:bg-gray-100 cursor-pointer disabled:cursor-not-allowed">
                     <option value="">Chọn Phường/Xã</option>
-                    {wards.map((w) => (
+                    {wards.map((w: any) => (
                       <option key={w.code} value={w.code}>{w.name}</option>
                     ))}
                   </select>
@@ -698,15 +827,18 @@ const Cart = () => {
                           type="text" 
                           value={voucherCode}
                           onChange={(e) => setVoucherCode(e.target.value)}
-                          placeholder="Nhập SEVEN10 / FREESHIP" 
+                          onKeyDown={(e) => e.key === 'Enter' && handleApplyVoucher()}
+                          placeholder="Nhập mã giảm giá" 
                           className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:border-[#E7000B] uppercase text-sm" 
                         />
                       </div>
                       <button 
                         onClick={handleApplyVoucher}
-                        className="bg-gray-900 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-black transition text-sm"
+                        disabled={isApplyingVoucher || !voucherCode.trim()}
+                        className="bg-gray-900 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-black transition text-sm flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
                       >
-                        Áp dụng
+                        {isApplyingVoucher ? <Loader2 size={14} className="animate-spin" /> : null}
+                        {isApplyingVoucher ? 'Đang kiểm tra...' : 'Áp dụng'}
                       </button>
                     </div>
                     {voucherError && <p className='text-red-500 text-xs italic mt-2'>{voucherError}</p>}
@@ -754,8 +886,13 @@ const Cart = () => {
 
                 {/* Nút Đặt Hàng */}
                 <div className="p-5 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                  <button onClick={handleConfirmOrder} className="w-full bg-[#E7000B] text-white py-3.5 rounded-xl font-bold text-lg hover:bg-[#C10008] transition shadow-lg shadow-red-200 flex items-center justify-center gap-2">
-                    Xác nhận đặt hàng
+                  <button
+                    onClick={handleConfirmOrder}
+                    disabled={isSubmittingOrder}
+                    className="w-full bg-[#E7000B] text-white py-3.5 rounded-xl font-bold text-lg hover:bg-[#C10008] transition shadow-lg shadow-red-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isSubmittingOrder && <Loader2 size={20} className="animate-spin" />}
+                    {isSubmittingOrder ? 'Đang xử lý thanh toán...' : 'Xác nhận đặt hàng'}
                   </button>
                   <p className="text-center text-xs text-gray-500 mt-3">
                     Bằng việc đặt hàng, bạn đồng ý với Điều khoản sử dụng của SevenStore

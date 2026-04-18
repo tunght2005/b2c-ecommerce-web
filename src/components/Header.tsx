@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, ShoppingCart, User } from 'lucide-react'
+import { Search, ShoppingCart, User, Bell, Heart } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import AuthModal from './AuthModal'
 import { USER_INFO_KEY } from '../api/config'
 import { API_BASE_URL } from '../api/config'
+import { useWishlist } from '../context/WishlistContext'
 
 function Header() {
   const [keyword, setKeyword] = useState('')
@@ -13,12 +14,14 @@ function Header() {
   const navigate = useNavigate()
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authInitialView, setAuthInitialView] = useState<'login' | 'register'>('login')
+  const { wishlistCount } = useWishlist()
 
   // --- STATE MỚI: Quản lý số lượng giỏ hàng ---
   const [cartCount, setCartCount] = useState(0)
 
   // --- STATE MỚI: Quản lý đăng nhập Profile ---
   const [userInfo, setUserInfo] = useState<Record<string, unknown> | null>(null)
+  const [notiCount, setNotiCount] = useState(0)
 
   const openAuthModal = (view: 'login' | 'register') => {
     setAuthInitialView(view)
@@ -71,7 +74,7 @@ function Header() {
         headers: { 'Authorization': `Bearer ${rawToken}` }
       })
       const data = await res.json()
-      
+
       // Vét cạn cấu trúc để tìm mảng items
       let items: Record<string, unknown>[] = []
       if (Array.isArray(data)) items = data as Record<string, unknown>[]
@@ -87,11 +90,43 @@ function Header() {
     }
   }
 
+  // --- LẮNG NGHE SỰ KIỆN: Thông báo ---
+  const refreshNotiCount = async () => {
+    const rawToken = localStorage.getItem('accessToken')
+    if (!rawToken) {
+      setNotiCount(0)
+      return
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/notification`, {
+        headers: { 'Authorization': `Bearer ${rawToken}` }
+      })
+      const data = await res.json()
+      const notifications = data?.data || (Array.isArray(data) ? data : [])
+      const unreadCount = notifications.filter((n: any) => !n.is_read).length
+      setNotiCount(unreadCount)
+    } catch (error) {
+      console.error('Không thể lấy số lượng thông báo:', error)
+    }
+  }
+
+  useEffect(() => {
+    refreshNotiCount()
+    const handleUpdate = () => refreshNotiCount()
+    window.addEventListener('notificationChanged', handleUpdate)
+    window.addEventListener('authChange', handleUpdate)
+    return () => {
+      window.removeEventListener('notificationChanged', handleUpdate)
+      window.removeEventListener('authChange', handleUpdate)
+    }
+  }, [])
+
   useEffect(() => {
     refreshCartCount() // Load lần đầu khi mở web
 
     const handleUpdate = () => refreshCartCount()
-    
+
     // Lắng nghe cả sự kiện cũ (addToCart) và sự kiện mới (cartChanged) cho chắc chắn
     window.addEventListener('addToCart', handleUpdate)
     window.addEventListener('cartChanged', handleUpdate)
@@ -132,7 +167,7 @@ function Header() {
   return (
     <header className='bg-red-600 text-white shadow-md sticky top-0 z-50'>
       <div className='max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4'>
-        
+
         {/* LOGO MỚI ĐƯỢC THÊM VÀO ĐÂY */}
         <img
           src="/logo.svg"
@@ -202,6 +237,36 @@ function Header() {
                 <User size={18} />
               </div>
               <span className='hidden sm:inline font-bold truncate max-w-[120px]'>{userInfo.username || 'Người dùng'}</span>
+            </button>
+          )}
+
+          {userInfo && (
+            <button
+              onClick={() => navigate('/profile/notifications')}
+              className='relative hover:text-yellow-300 transition'
+            >
+              <Bell size={20} />
+              {notiCount > 0 && (
+                <span className='absolute -top-1.5 -right-2 bg-yellow-400 text-black text-[10px] w-4 h-4 flex items-center justify-center rounded-full font-bold border-2 border-red-600'>
+                  {notiCount > 9 ? '9+' : notiCount}
+                </span>
+              )}
+            </button>
+          )}
+
+          {userInfo && (
+            <button
+              onClick={() => navigate('/profile/wishlist')}
+              className='relative flex items-center gap-2 hover:text-yellow-300 transition'
+              title='Sản phẩm yêu thích'
+            >
+              <Heart size={20} />
+              <span className='hidden sm:inline'>Yêu thích</span>
+              {(wishlistCount > 0) && (
+                <span className='absolute -top-2 -right-3 bg-yellow-400 text-black text-xs px-2 py-0.5 rounded-full font-bold'>
+                  {wishlistCount > 99 ? '99+' : wishlistCount}
+                </span>
+              )}
             </button>
           )}
 

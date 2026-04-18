@@ -15,10 +15,18 @@ import ReturnPolicy from './pages/ReturnPolicy'
 import ReturnRequest from './pages/ReturnRequest'
 import CancelSuccess from './pages/CancelSuccess'
 import OrderSuccess from './pages/OrderSuccess'
+import VnpayReturn from './pages/VnpayReturn'
 
 import ProfileLayout from './components/ProfileLayout'
 import ProfileInfo from './pages/ProfileInfo'
 import ProfileAddresses from './pages/ProfileAddresses'
+import ProfileNotifications from './pages/ProfileNotifications'
+import ProfileFeedback from './pages/ProfileFeedback'
+import ProfileReturns from './pages/ProfileReturns'
+import ProfileReviews from './pages/ProfileReviews'
+import ProfileWishlist from './pages/ProfileWishlist'
+import ProfileWarranty from './pages/ProfileWarranty'
+import ProfilePromotions from './pages/ProfilePromotions'
 
 function App() {
   return (
@@ -39,6 +47,13 @@ function App() {
           <Route index element={<ProfileInfo />} />
           <Route path='orders' element={<Orders />} />
           <Route path='addresses' element={<ProfileAddresses />} />
+          <Route path='notifications' element={<ProfileNotifications />} />
+          <Route path='feedback' element={<ProfileFeedback />} />
+          <Route path='returns' element={<ProfileReturns />} />
+          <Route path='reviews' element={<ProfileReviews />} />
+          <Route path='wishlist' element={<ProfileWishlist />} />
+          <Route path='warranty' element={<ProfileWarranty />} />
+          <Route path='promotions' element={<ProfilePromotions />} />
         </Route>
 
         {/* ORDER DETAILS & ACTIONS (Full Screen) */}
@@ -46,6 +61,8 @@ function App() {
         <Route path='/orders/:id/return' element={<ReturnRequest />} />
         <Route path='/orders/:id/cancel-success' element={<CancelSuccess />} />
         <Route path='/order-success/:id' element={<OrderSuccess />} />
+        <Route path='/payment/vnpay-return' element={<VnpayReturn />} />
+        <Route path='/api/payment/vnpay-return' element={<VnpayReturn />} />
         
         <Route path='/return-policy' element={<ReturnPolicy />} />
       </Routes>
