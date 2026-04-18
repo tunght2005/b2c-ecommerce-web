@@ -19,7 +19,8 @@ export default function ReturnPolicy() {
                 1. Thời gian áp dụng
               </h2>
               <p className='text-gray-600 leading-relaxed ml-7'>
-                Khách hàng có thể yêu cầu đổi trả sản phẩm trong vòng <strong>30 ngày</strong> kể từ ngày nhận hàng thành công (đối với các lỗi từ nhà sản xuất).
+                Khách hàng có thể yêu cầu đổi trả sản phẩm trong vòng <strong>30 ngày</strong> kể từ ngày nhận hàng
+                thành công (đối với các lỗi từ nhà sản xuất).
               </p>
             </section>
 
@@ -30,7 +31,9 @@ export default function ReturnPolicy() {
               </h2>
               <ul className='space-y-3 ml-7 text-gray-600'>
                 <li className='flex gap-2'>• Sản phẩm còn nguyên tem, mác, hộp và đầy đủ phụ kiện đi kèm.</li>
-                <li className='flex gap-2'>• Sản phẩm không có dấu hiệu trầy xước, móp méo do tác động ngoại lực từ phía người dùng.</li>
+                <li className='flex gap-2'>
+                  • Sản phẩm không có dấu hiệu trầy xước, móp méo do tác động ngoại lực từ phía người dùng.
+                </li>
                 <li className='flex gap-2'>• Có hóa đơn mua hàng hoặc thông tin đơn hàng trên hệ thống SevenStore.</li>
               </ul>
             </section>
@@ -41,7 +44,8 @@ export default function ReturnPolicy() {
                 Lưu ý quan trọng
               </h2>
               <p className='text-sm text-red-600 leading-relaxed'>
-                Các sản phẩm thuộc danh mục quà tặng kèm, phụ kiện tiêu hao (như miếng dán màn hình) sẽ không áp dụng chính sách hoàn trả trừ khi có lỗi kỹ thuật ngay khi mở hộp.
+                Các sản phẩm thuộc danh mục quà tặng kèm, phụ kiện tiêu hao (như miếng dán màn hình) sẽ không áp dụng
+                chính sách hoàn trả trừ khi có lỗi kỹ thuật ngay khi mở hộp.
               </p>
             </section>
           </div>

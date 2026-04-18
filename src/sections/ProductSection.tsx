@@ -15,7 +15,7 @@ export default function ProductSection() {
         // 1. Lấy danh sách sản phẩm gốc
         let baseProducts: Product[] = []
         const res = await fetchClient<Product[]>('/products')
-        
+
         if (Array.isArray(res)) {
           baseProducts = res
         } else if (res && Array.isArray((res as Record<string, unknown>).data)) {
@@ -32,19 +32,24 @@ export default function ProductSection() {
                   fetchClient<Record<string, unknown>[]>(`/variants/product/${prod._id}`).catch(() => []),
                   fetchClient<Record<string, unknown>[]>(`/product-images/product/${prod._id}`).catch(() => [])
                 ])
-                
+
                 // Trích xuất list vào product object
-                const variants = Array.isArray(variantsRes) ? variantsRes : ((variantsRes as Record<string, unknown>).data as Record<string, unknown>[]) || []
-                const images = Array.isArray(imagesRes) ? imagesRes : ((imagesRes as Record<string, unknown>).data as Record<string, unknown>[]) || []
-                
+                const variants = Array.isArray(variantsRes)
+                  ? variantsRes
+                  : ((variantsRes as Record<string, unknown>).data as Record<string, unknown>[]) || []
+                const images = Array.isArray(imagesRes)
+                  ? imagesRes
+                  : ((imagesRes as Record<string, unknown>).data as Record<string, unknown>[]) || []
+
                 return {
                   ...prod,
                   variants: variants,
                   // Fix field: API dùng "url" không phải "image_url"; ưu tiên ảnh is_primary
                   image: resolveImageUrl(
                     images.length > 0
-                      ? ((images.find((img: Record<string, unknown>) => img.is_primary)?.url
-                          || images[0].url) as string | undefined)
+                      ? ((images.find((img: Record<string, unknown>) => img.is_primary)?.url || images[0].url) as
+                          | string
+                          | undefined)
                       : undefined
                   )
                 }
@@ -69,21 +74,21 @@ export default function ProductSection() {
 
   return (
     <section className='max-w-7xl mx-auto mt-8 sm:mt-12 px-4'>
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 border-l-4 border-red-500 pl-3">
+      <h2 className='text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 border-l-4 border-red-500 pl-3'>
         Sản phẩm nổi bật
       </h2>
-      
+
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-12 bg-gray-50 rounded-2xl border border-gray-100 border-dashed">
-           <Loader2 className="animate-spin text-red-500 mb-4" size={40} />
-           <p className="text-gray-500 font-medium animate-pulse">Đang tải sản phẩm siêu hot...</p>
+        <div className='flex flex-col items-center justify-center py-12 bg-gray-50 rounded-2xl border border-gray-100 border-dashed'>
+          <Loader2 className='animate-spin text-red-500 mb-4' size={40} />
+          <p className='text-gray-500 font-medium animate-pulse'>Đang tải sản phẩm siêu hot...</p>
         </div>
       ) : (
         <div className='grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5'>
-          {products.length > 0 ? products.map((p) => (
-            <ProductCard key={p._id || p.id} product={p} />
-          )) : (
-            <div className="col-span-full text-center py-10 text-gray-500">Chưa có sản phẩm nào được hiển thị.</div>
+          {products.length > 0 ? (
+            products.map((p) => <ProductCard key={p._id || p.id} product={p} />)
+          ) : (
+            <div className='col-span-full text-center py-10 text-gray-500'>Chưa có sản phẩm nào được hiển thị.</div>
           )}
         </div>
       )}

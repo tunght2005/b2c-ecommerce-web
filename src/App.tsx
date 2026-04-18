@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import Header from './components/Header'
 import Navbar from './components/Navbar'
 import AIChat from './components/AIChat'
+import Toast from './components/Toast'
 
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -41,7 +42,7 @@ function App() {
         <Route path='/cart' element={<Cart />} />
         <Route path='/product/:id' element={<ProductDetail />} />
         <Route path='/category/:name' element={<CategoryPage />} />
-        
+
         {/* PROFILE NESTED ROUTES */}
         <Route path='/profile' element={<ProfileLayout />}>
           <Route index element={<ProfileInfo />} />
@@ -63,11 +64,12 @@ function App() {
         <Route path='/order-success/:id' element={<OrderSuccess />} />
         <Route path='/payment/vnpay-return' element={<VnpayReturn />} />
         <Route path='/api/payment/vnpay-return' element={<VnpayReturn />} />
-        
+
         <Route path='/return-policy' element={<ReturnPolicy />} />
       </Routes>
 
       <AIChat />
+      <Toast />
     </>
   )
 }

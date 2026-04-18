@@ -65,7 +65,7 @@ export default function VideoCard({ video }: Props) {
         {/* THUMB */}
         {!isPlaying && (
           <>
-            <img src={video.thumbnail} alt={video.title} className='absolute inset-0 w-full h-full object-cover' />
+
 
             <div className='absolute inset-0 bg-black/40 flex items-center justify-center'>
               <button onClick={handlePlay} className='bg-white p-3 rounded-full shadow'>

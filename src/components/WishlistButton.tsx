@@ -1,39 +1,39 @@
-import React, { useState } from 'react';
-import { Heart, Loader } from 'lucide-react';
-import { useWishlist } from '../context/WishlistContext';
+import React, { useState } from 'react'
+import { Heart, Loader } from 'lucide-react'
+import { useWishlist } from '../context/WishlistContext'
 
 interface WishlistButtonProps {
-  productId: string;
-  className?: string;
-  size?: number;
-  showText?: boolean;
+  productId: string
+  className?: string
+  size?: number
+  showText?: boolean
 }
 
-export default function WishlistButton({ 
-  productId, 
-  className = '', 
+export default function WishlistButton({
+  productId,
+  className = '',
   size = 20,
   showText = false
 }: WishlistButtonProps) {
-  const { isInWishlist, toggleWishlist } = useWishlist();
-  const [loading, setLoading] = useState(false);
-  const isLiked = isInWishlist(productId);
+  const { isInWishlist, toggleWishlist } = useWishlist()
+  const [loading, setLoading] = useState(false)
+  const isLiked = isInWishlist(productId)
 
   const handleClick = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (loading) return;
-    
-    setLoading(true);
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (loading) return
+
+    setLoading(true)
     try {
-      await toggleWishlist(productId);
+      await toggleWishlist(productId)
     } catch (err) {
       // Error is handled in context
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <button
@@ -43,15 +43,13 @@ export default function WishlistButton({
       title={isLiked ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
     >
       {loading ? (
-        <Loader size={size} className="animate-spin text-gray-400" />
+        <Loader size={size} className='animate-spin text-gray-400' />
       ) : (
-        <Heart 
-          size={size} 
+        <Heart
+          size={size}
           className={`transition-colors duration-300 ${
-            isLiked 
-              ? 'text-red-500 fill-red-500 shadow-red-200' 
-              : 'text-gray-400 group-hover:text-red-500'
-          }`} 
+            isLiked ? 'text-red-500 fill-red-500 shadow-red-200' : 'text-gray-400 group-hover:text-red-500'
+          }`}
         />
       )}
       {showText && (
@@ -60,5 +58,5 @@ export default function WishlistButton({
         </span>
       )}
     </button>
-  );
+  )
 }

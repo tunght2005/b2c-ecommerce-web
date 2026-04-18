@@ -3,12 +3,14 @@ import { X, Star, Upload, ImageIcon, Video, CheckCircle2, Loader2, Trash2, Chevr
 import { fetchClient } from '../api/fetchClient'
 
 interface OrderItem {
-  variant_id: string | {
-    _id: string
-    name?: string
-    sku?: string
-    product_id?: string | { _id: string; name?: string }
-  }
+  variant_id:
+    | string
+    | {
+        _id: string
+        name?: string
+        sku?: string
+        product_id?: string | { _id: string; name?: string }
+      }
   name?: string
   image?: string
   price?: number
@@ -32,8 +34,13 @@ interface ReviewModalProps {
 const RATING_LABELS = ['Rất tệ', 'Tệ', 'Bình thường', 'Tốt', 'Xuất sắc']
 const RATING_COLORS = ['text-red-500', 'text-orange-500', 'text-yellow-500', 'text-blue-500', 'text-green-500']
 const TAG_SUGGESTIONS = [
-  'Giao hàng nhanh', 'Đóng gói cẩn thận', 'Sản phẩm chính hãng',
-  'Giống mô tả', 'Chất lượng tốt', 'Giá hợp lý', 'Sẽ mua lại',
+  'Giao hàng nhanh',
+  'Đóng gói cẩn thận',
+  'Sản phẩm chính hãng',
+  'Giống mô tả',
+  'Chất lượng tốt',
+  'Giá hợp lý',
+  'Sẽ mua lại'
 ]
 
 interface MediaFile {
@@ -71,10 +78,13 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
     // Bỏ 2 segment cuối cùng (thường là mã ngẫu nhiên và mã màu/dung lượng)
     const parts = sku.split('-')
     // Giữ những phần không phải mã thuần (không phải ALL_CAPS ngắn)
-    const meaningful = parts.filter((p, i) => i < parts.length - 1 && !/^[A-Z]{3,5}\d*$/.test(p) || parts.length <= 3)
+    const meaningful = parts.filter((p, i) => (i < parts.length - 1 && !/^[A-Z]{3,5}\d*$/.test(p)) || parts.length <= 3)
     const keyword = (meaningful.length > 2 ? meaningful : parts.slice(0, 4)).join(' ')
     // Capitalize each word
-    return keyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    return keyword
+      .split(' ')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(' ')
   }
 
   const getItemName = (item: OrderItem) => {
@@ -112,9 +122,7 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
   console.log('[ReviewModal] Current productId (sync):', getProductId(currentItem))
 
   const toggleTag = (tag: string) => {
-    setSelectedTags(prev =>
-      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
-    )
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
   }
 
   // --- UPLOAD MEDIA ---
@@ -123,15 +131,18 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
     const remaining = 5 - mediaFiles.length
     const toAdd = files.slice(0, remaining)
 
-    toAdd.forEach(file => {
+    toAdd.forEach((file) => {
       const isVideo = file.type.startsWith('video/')
       const reader = new FileReader()
       reader.onload = (ev) => {
-        setMediaFiles(prev => [...prev, {
-          file,
-          preview: ev.target?.result as string,
-          type: isVideo ? 'video' : 'image'
-        }])
+        setMediaFiles((prev) => [
+          ...prev,
+          {
+            file,
+            preview: ev.target?.result as string,
+            type: isVideo ? 'video' : 'image'
+          }
+        ])
       }
       reader.readAsDataURL(file)
     })
@@ -141,7 +152,7 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
   }
 
   const removeMedia = (index: number) => {
-    setMediaFiles(prev => prev.filter((_, i) => i !== index))
+    setMediaFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
   // --- SUBMIT ---
@@ -181,28 +192,28 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
       // 3. Fallback: tìm product_id bằng cách search từ khóa rút gọn từ SKU
       if (!productId) {
         // Lấy SKU từ variant_id
-        const sku = typeof currentItem.variant_id === 'object'
-          ? currentItem.variant_id?.sku || ''
-          : ''
+        const sku = typeof currentItem.variant_id === 'object' ? currentItem.variant_id?.sku || '' : ''
 
         // Đổi SKU sang từ khóa search
         // VD: "SAMSUNG-GALAXY-S24-ULTRA-128G-FXT4" → "SAMSUNG GALAXY S24 ULTRA"
-        const searchKeyword = sku
-          ? skuToSearchKeyword(sku)
-          : getItemName(currentItem).split(' ').slice(0, 3).join(' ')
+        const searchKeyword = sku ? skuToSearchKeyword(sku) : getItemName(currentItem).split(' ').slice(0, 3).join(' ')
 
         if (searchKeyword && searchKeyword !== 'Sản phẩm tiêu chuẩn') {
           console.log('[ReviewModal] Search product bằng keyword:', searchKeyword, '(từ SKU:', sku, ')')
           try {
             const searchRes: any = await fetchClient(`/products/search?q=${encodeURIComponent(searchKeyword)}`)
             // API search trả về raw array
-            const products = Array.isArray(searchRes) ? searchRes : (searchRes?.data || [])
+            const products = Array.isArray(searchRes) ? searchRes : searchRes?.data || []
             if (products.length > 0) {
               // Tìm product có tên gần đúng nhất (so khớp theo SKU)
               const skuLower = sku.toLowerCase().replace(/-/g, ' ')
-              const bestMatch = products.find((p: any) =>
-                p.name?.toLowerCase().split(' ').some((word: string) => skuLower.includes(word))
-              ) || products[0]
+              const bestMatch =
+                products.find((p: any) =>
+                  p.name
+                    ?.toLowerCase()
+                    .split(' ')
+                    .some((word: string) => skuLower.includes(word))
+                ) || products[0]
 
               productId = bestMatch?._id || bestMatch?.id || ''
               console.log('[ReviewModal] ✓ Tìm được product_id:', productId, '| Tên:', bestMatch?.name)
@@ -217,9 +228,12 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
 
       // 4. Cuối cùng fallback: dùng variant._id (có thể BE chấp nhận)
       if (!productId) {
-        const variantId = typeof currentItem.variant_id === 'object'
-          ? currentItem.variant_id?._id
-          : typeof currentItem.variant_id === 'string' ? currentItem.variant_id : ''
+        const variantId =
+          typeof currentItem.variant_id === 'object'
+            ? currentItem.variant_id?._id
+            : typeof currentItem.variant_id === 'string'
+              ? currentItem.variant_id
+              : ''
         productId = variantId
         console.warn('[ReviewModal] Dùng variant_id làm product_id (fallback cuối):', productId)
       }
@@ -230,9 +244,7 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
         return
       }
 
-      const reviewContent = selectedTags.length > 0
-        ? `${content}\n\n✓ ${selectedTags.join(' · ')}`
-        : content
+      const reviewContent = selectedTags.length > 0 ? `${content}\n\n✓ ${selectedTags.join(' · ')}` : content
 
       console.log('[ReviewModal] POST /reviews với product_id:', productId)
       await fetchClient('/reviews', {
@@ -240,7 +252,7 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
         body: JSON.stringify({
           product_id: productId,
           rating,
-          content: reviewContent,
+          content: reviewContent
         })
       })
       setIsSuccess(true)
@@ -255,16 +267,18 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
   // --- SUCCESS SCREEN ---
   if (isSuccess) {
     return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm animate-fadeIn">
-        <div className="bg-white rounded-3xl w-full max-w-sm p-8 flex flex-col items-center text-center shadow-2xl">
-          <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-5">
-            <CheckCircle2 className="text-green-500" size={40} />
+      <div className='fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm animate-fadeIn'>
+        <div className='bg-white rounded-3xl w-full max-w-sm p-8 flex flex-col items-center text-center shadow-2xl'>
+          <div className='w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-5'>
+            <CheckCircle2 className='text-green-500' size={40} />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Cảm ơn bạn đã đánh giá!</h3>
-          <p className="text-gray-500 text-sm mb-6">Đánh giá của bạn giúp những người mua khác có thêm thông tin hữu ích.</p>
+          <h3 className='text-xl font-bold text-gray-900 mb-2'>Cảm ơn bạn đã đánh giá!</h3>
+          <p className='text-gray-500 text-sm mb-6'>
+            Đánh giá của bạn giúp những người mua khác có thêm thông tin hữu ích.
+          </p>
           <button
             onClick={onClose}
-            className="w-full py-3.5 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-700 transition"
+            className='w-full py-3.5 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-700 transition'
           >
             Đóng
           </button>
@@ -274,49 +288,65 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col">
+    <div className='fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4 backdrop-blur-sm animate-fadeIn'>
+      <div className='bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col relative'>
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className='absolute top-5 right-5 text-gray-400 hover:text-gray-700 transition z-20 p-1'
+        >
+          <X size={22} />
+        </button>
 
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100 sticky top-0 bg-white z-10">
-          <div>
-            <h3 className="font-bold text-lg text-gray-900">Viết đánh giá</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Đơn hàng #{order._id.slice(-6).toUpperCase()}</p>
+        <div className='flex items-center gap-3 p-6 border-b border-gray-100 bg-white z-10 sticky top-0'>
+          <div className='w-12 h-12 rounded-full bg-yellow-50 flex items-center justify-center flex-shrink-0'>
+            <Star className='text-yellow-500' size={24} fill='currentColor' />
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-2 bg-gray-50 rounded-full hover:bg-gray-100 transition"
-          >
-            <X size={20} />
-          </button>
+          <div>
+            <h3 className='font-bold text-xl text-gray-900'>Viết đánh giá</h3>
+            <p className='text-xs text-gray-500 mt-0.5 font-medium'>Đơn hàng #{order._id.slice(-6).toUpperCase()}</p>
+          </div>
         </div>
 
-        <div className="p-5 space-y-5 flex-1">
-
+        <div className='p-6 space-y-6 flex-1 overflow-y-auto'>
           {/* Chọn sản phẩm (nếu đơn có nhiều item) */}
           {order.items.length > 1 && (
-            <div className="relative">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Sản phẩm cần đánh giá</label>
+            <div className='relative'>
+              <label className='block text-sm font-semibold text-gray-700 mb-2'>Sản phẩm cần đánh giá</label>
               <button
                 onClick={() => setIsItemDropdownOpen(!isItemDropdownOpen)}
-                className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-2xl hover:border-red-300 transition text-left"
+                className='w-full flex items-center gap-3 p-3 border border-gray-200 rounded-2xl hover:border-red-300 transition text-left'
               >
                 {currentItem.image && (
-                  <img src={currentItem.image} className="w-10 h-10 object-cover rounded-xl bg-gray-100 flex-shrink-0" />
+                  <img
+                    src={currentItem.image}
+                    className='w-10 h-10 object-cover rounded-xl bg-gray-100 flex-shrink-0'
+                  />
                 )}
-                <span className="flex-1 text-sm font-medium text-gray-800 line-clamp-1">{getItemName(currentItem)}</span>
-                <ChevronDown size={16} className={`text-gray-400 transition-transform ${isItemDropdownOpen ? 'rotate-180' : ''}`} />
+                <span className='flex-1 text-sm font-medium text-gray-800 line-clamp-1'>
+                  {getItemName(currentItem)}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`text-gray-400 transition-transform ${isItemDropdownOpen ? 'rotate-180' : ''}`}
+                />
               </button>
               {isItemDropdownOpen && (
-                <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden">
+                <div className='absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden'>
                   {order.items.map((item, idx) => (
                     <button
                       key={idx}
-                      onClick={() => { setSelectedItemIndex(idx); setIsItemDropdownOpen(false) }}
+                      onClick={() => {
+                        setSelectedItemIndex(idx)
+                        setIsItemDropdownOpen(false)
+                      }}
                       className={`w-full flex items-center gap-3 p-3 hover:bg-red-50 transition text-left ${idx === selectedItemIndex ? 'bg-red-50' : ''}`}
                     >
-                      {item.image && <img src={item.image} className="w-10 h-10 object-cover rounded-xl bg-gray-100 flex-shrink-0" />}
-                      <span className="text-sm font-medium text-gray-800 line-clamp-1">{getItemName(item)}</span>
+                      {item.image && (
+                        <img src={item.image} className='w-10 h-10 object-cover rounded-xl bg-gray-100 flex-shrink-0' />
+                      )}
+                      <span className='text-sm font-medium text-gray-800 line-clamp-1'>{getItemName(item)}</span>
                     </button>
                   ))}
                 </div>
@@ -326,30 +356,33 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
 
           {/* Sản phẩm hiện tại (1 item) */}
           {order.items.length === 1 && (
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl">
+            <div className='flex items-center gap-3 p-3 bg-gray-50 rounded-2xl'>
               {currentItem.image && (
-                <img src={currentItem.image} className="w-14 h-14 object-cover rounded-xl bg-white flex-shrink-0" />
+                <img src={currentItem.image} className='w-14 h-14 object-cover rounded-xl bg-white flex-shrink-0' />
               )}
               <div>
-                <p className="font-semibold text-gray-900 text-sm line-clamp-2">{getItemName(currentItem)}</p>
-                <p className="text-xs text-gray-500 mt-0.5">x{currentItem.quantity}</p>
+                <p className='font-semibold text-gray-900 text-sm line-clamp-2'>{getItemName(currentItem)}</p>
+                <p className='text-xs text-gray-500 mt-0.5'>x{currentItem.quantity}</p>
               </div>
             </div>
           )}
 
           {/* Rating sao */}
-          <div id="review-rating-section" className={`${rating === 0 && errorMsg.includes('sao') ? 'ring-2 ring-red-300 bg-red-50/30' : ''} rounded-2xl p-3 -mx-3 transition-all`}>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Chất lượng sản phẩm <span className="text-red-500">*</span>
+          <div
+            id='review-rating-section'
+            className={`${rating === 0 && errorMsg.includes('sao') ? 'ring-2 ring-red-300 bg-red-50/30' : ''} rounded-2xl p-3 -mx-3 transition-all`}
+          >
+            <label className='block text-sm font-semibold text-gray-700 mb-3'>
+              Chất lượng sản phẩm <span className='text-red-500'>*</span>
             </label>
-            <div className="flex items-center gap-2">
-              {[1, 2, 3, 4, 5].map(star => (
+            <div className='flex items-center gap-2'>
+              {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   onMouseEnter={() => setHoverRating(star)}
                   onMouseLeave={() => setHoverRating(0)}
                   onClick={() => setRating(star)}
-                  className="transition-transform hover:scale-110 active:scale-95"
+                  className='transition-transform hover:scale-110 active:scale-95'
                 >
                   <Star
                     size={36}
@@ -369,9 +402,9 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
           {/* Tags gợi ý */}
           {rating >= 4 && (
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Điểm nổi bật (tuỳ chọn)</label>
-              <div className="flex flex-wrap gap-2">
-                {TAG_SUGGESTIONS.map(tag => (
+              <label className='block text-sm font-semibold text-gray-700 mb-2'>Điểm nổi bật (tuỳ chọn)</label>
+              <div className='flex flex-wrap gap-2'>
+                {TAG_SUGGESTIONS.map((tag) => (
                   <button
                     key={tag}
                     onClick={() => toggleTag(tag)}
@@ -381,7 +414,8 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
                         : 'bg-white text-gray-600 border-gray-200 hover:border-green-300'
                     }`}
                   >
-                    {selectedTags.includes(tag) ? '✓ ' : ''}{tag}
+                    {selectedTags.includes(tag) ? '✓ ' : ''}
+                    {tag}
                   </button>
                 ))}
               </div>
@@ -390,15 +424,15 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
 
           {/* Nội dung */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Nội dung đánh giá <span className="text-red-500">*</span>
+            <label className='block text-sm font-semibold text-gray-700 mb-2'>
+              Nội dung đánh giá <span className='text-red-500'>*</span>
             </label>
             <textarea
               value={content}
-              onChange={e => setContent(e.target.value)}
-              placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này... (tối thiểu 10 ký tự)"
+              onChange={(e) => setContent(e.target.value)}
+              placeholder='Chia sẻ trải nghiệm của bạn về sản phẩm này... (tối thiểu 10 ký tự)'
               rows={4}
-              className="w-full border border-gray-200 rounded-2xl p-4 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 transition placeholder:text-gray-300"
+              className='w-full border border-gray-200 rounded-2xl p-4 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 transition placeholder:text-gray-300'
             />
             <p className={`text-xs mt-1 text-right ${content.length < 10 ? 'text-gray-400' : 'text-green-500'}`}>
               {content.length} / 500 ký tự
@@ -407,27 +441,27 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
 
           {/* Upload ảnh / video */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Thêm ảnh / video <span className="text-gray-400 font-normal">(tối đa 5 file)</span>
+            <label className='block text-sm font-semibold text-gray-700 mb-2'>
+              Thêm ảnh / video <span className='text-gray-400 font-normal'>(tối đa 5 file)</span>
             </label>
 
-            <div className="flex flex-wrap gap-2">
+            <div className='flex flex-wrap gap-2'>
               {/* Preview items */}
               {mediaFiles.map((media, idx) => (
-                <div key={idx} className="relative w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 group">
+                <div key={idx} className='relative w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 group'>
                   {media.type === 'video' ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-800">
-                      <Video size={24} className="text-white" />
-                      <span className="text-[10px] text-gray-300 mt-1">Video</span>
+                    <div className='w-full h-full flex flex-col items-center justify-center bg-gray-800'>
+                      <Video size={24} className='text-white' />
+                      <span className='text-[10px] text-gray-300 mt-1'>Video</span>
                     </div>
                   ) : (
-                    <img src={media.preview} className="w-full h-full object-cover" alt="" />
+                    <img src={media.preview} className='w-full h-full object-cover' alt='' />
                   )}
                   <button
                     onClick={() => removeMedia(idx)}
-                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
+                    className='absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]'
                   >
-                    <Trash2 size={18} className="text-white" />
+                    <Trash2 size={18} className='text-white drop-shadow-md' />
                   </button>
                 </div>
               ))}
@@ -436,55 +470,59 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
               {mediaFiles.length < 5 && (
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-20 h-20 rounded-2xl border-2 border-dashed border-gray-300 hover:border-red-400 transition flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-red-400"
+                  className='w-20 h-20 rounded-2xl border-2 border-dashed border-gray-300 hover:border-red-400 transition flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-red-400'
                 >
                   <Upload size={20} />
-                  <span className="text-[10px] font-medium">Thêm</span>
+                  <span className='text-[10px] font-medium'>Thêm</span>
                 </button>
               )}
             </div>
 
             <input
               ref={fileInputRef}
-              type="file"
-              accept="image/*,video/*"
+              type='file'
+              accept='image/*,video/*'
               multiple
-              className="hidden"
+              className='hidden'
               onChange={handleFileChange}
             />
 
-            <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
-              <span className="flex items-center gap-1"><ImageIcon size={12} /> Ảnh JPG, PNG, WEBP</span>
-              <span className="flex items-center gap-1"><Video size={12} /> Video MP4, MOV</span>
+            <div className='flex items-center gap-4 mt-2 text-xs text-gray-400'>
+              <span className='flex items-center gap-1'>
+                <ImageIcon size={12} /> Ảnh JPG, PNG, WEBP
+              </span>
+              <span className='flex items-center gap-1'>
+                <Video size={12} /> Video MP4, MOV
+              </span>
             </div>
           </div>
 
           {/* Thông báo lỗi */}
           {errorMsg && (
-            <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-sm text-red-600 font-medium">
+            <div className='bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-sm text-red-600 font-medium'>
               ⚠ {errorMsg}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-5 border-t border-gray-100 bg-white sticky bottom-0 flex gap-3">
+        <div className='p-6 border-t border-gray-100 bg-gray-50 flex gap-3'>
           <button
             onClick={onClose}
-            className="flex-1 py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition"
+            className='flex-1 py-3 bg-white border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition shadow-sm'
           >
-            Hủy
+            Thoát
           </button>
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className={`flex-1 py-3.5 rounded-2xl font-bold text-white transition flex items-center justify-center gap-2 ${
+            className={`flex-1 flex justify-center items-center gap-2 py-3 rounded-xl font-semibold transition shadow-md ${
               !isSubmitting
-                ? 'bg-red-600 hover:bg-red-700 shadow-lg shadow-red-200 active:scale-95'
-                : 'bg-gray-300 cursor-not-allowed'
+                ? 'bg-[#E7000B] text-white hover:bg-[#C10008] shadow-red-200'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
             }`}
           >
-            {isSubmitting && <Loader2 size={18} className="animate-spin" />}
+            {isSubmitting && <Loader2 size={18} className='animate-spin text-gray-400' />}
             {isSubmitting ? 'Đang gửi...' : 'Gửi đánh giá'}
           </button>
         </div>

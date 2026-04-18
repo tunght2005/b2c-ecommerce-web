@@ -24,21 +24,22 @@ export default function CancelSuccess() {
         <h2 className='text-xl sm:text-2xl font-bold text-gray-900 text-center mb-3'>
           Yêu cầu hủy đơn hàng đã được gửi
         </h2>
-        
+
         <p className='text-gray-500 text-center max-w-sm mb-8 text-sm sm:text-base leading-relaxed'>
-          SevenStore đang xử lý yêu cầu hủy đơn hàng #{id} của bạn. Nếu bạn đã thanh toán trước, hệ thống sẽ tự động hoàn tiền trong vòng 1-3 ngày làm việc.
+          SevenStore đang xử lý yêu cầu hủy đơn hàng #{id} của bạn. Nếu bạn đã thanh toán trước, hệ thống sẽ tự động
+          hoàn tiền trong vòng 1-3 ngày làm việc.
         </p>
 
         <div className='w-full max-w-sm space-y-3'>
-          <button 
+          <button
             onClick={() => navigate(`/orders/${id}`)}
             className='w-full flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-3.5 rounded-2xl hover:bg-red-700 transition shadow-lg shadow-red-100'
           >
             <FileText size={20} />
             Xem chi tiết đơn hàng
           </button>
-          
-          <button 
+
+          <button
             onClick={() => navigate('/orders')}
             className='w-full font-bold text-gray-600 py-3.5 rounded-2xl hover:bg-gray-100 transition'
           >

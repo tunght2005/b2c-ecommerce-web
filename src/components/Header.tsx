@@ -8,7 +8,7 @@ import { useWishlist } from '../context/WishlistContext'
 
 function Header() {
   const [keyword, setKeyword] = useState('')
-  const [suggestions, setSuggestions] = useState<Array<{ _id: string; name: string; thumbnail?: string }>>([]);
+  const [suggestions, setSuggestions] = useState<Array<{ _id: string; name: string; thumbnail?: string }>>([])
   const [isSearching, setIsSearching] = useState(false)
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const navigate = useNavigate()
@@ -20,7 +20,7 @@ function Header() {
   const [cartCount, setCartCount] = useState(0)
 
   // --- STATE MỚI: Quản lý đăng nhập Profile ---
-  const [userInfo, setUserInfo] = useState<Record<string, unknown> | null>(null)
+  const [userInfo, setUserInfo] = useState<any>(null)
   const [notiCount, setNotiCount] = useState(0)
 
   const openAuthModal = (view: 'login' | 'register') => {
@@ -38,10 +38,7 @@ function Header() {
     window.addEventListener('openAuthModal', handleOpenModalFromOutside as EventListener)
 
     return () => {
-      window.removeEventListener(
-        'openAuthModal',
-        handleOpenModalFromOutside as EventListener
-      )
+      window.removeEventListener('openAuthModal', handleOpenModalFromOutside as EventListener)
     }
   }, [])
 
@@ -50,7 +47,11 @@ function Header() {
     const loadUserInfo = () => {
       const raw = localStorage.getItem(USER_INFO_KEY)
       if (raw) {
-        try { setUserInfo(JSON.parse(raw)) } catch { setUserInfo(null) }
+        try {
+          setUserInfo(JSON.parse(raw))
+        } catch {
+          setUserInfo(null)
+        }
       } else {
         setUserInfo(null)
       }
@@ -71,7 +72,7 @@ function Header() {
 
     try {
       const res = await fetch(`${API_BASE_URL}/cart`, {
-        headers: { 'Authorization': `Bearer ${rawToken}` }
+        headers: { Authorization: `Bearer ${rawToken}` }
       })
       const data = await res.json()
 
@@ -83,7 +84,10 @@ function Header() {
       else if (data?.data && Array.isArray(data.data)) items = data.data as Record<string, unknown>[]
 
       // Tính tổng số lượng (quantity) của tất cả item
-      const total = items.reduce((sum: number, item: Record<string, unknown>) => sum + ((item.quantity as number) || 1), 0)
+      const total = items.reduce(
+        (sum: number, item: Record<string, unknown>) => sum + ((item.quantity as number) || 1),
+        0
+      )
       setCartCount(total)
     } catch (error) {
       console.error('Không thể lấy số lượng giỏ hàng:', error)
@@ -100,7 +104,7 @@ function Header() {
 
     try {
       const res = await fetch(`${API_BASE_URL}/notification`, {
-        headers: { 'Authorization': `Bearer ${rawToken}` }
+        headers: { Authorization: `Bearer ${rawToken}` }
       })
       const data = await res.json()
       const notifications = data?.data || (Array.isArray(data) ? data : [])
@@ -154,7 +158,7 @@ function Header() {
         const res = await fetch(`${API_BASE_URL}/products/search?q=${encodeURIComponent(value)}`)
         const data = await res.json()
         // Vét cạn cấu trúc JSON trả về
-        const products = Array.isArray(data) ? data : (data?.data || data?.products || data?.results || [])
+        const products = Array.isArray(data) ? data : data?.data || data?.products || data?.results || []
         setSuggestions(products.slice(0, 6)) // Chỉ hiện tối đa 6 gợi ý
       } catch {
         setSuggestions([])
@@ -167,13 +171,12 @@ function Header() {
   return (
     <header className='bg-red-600 text-white shadow-md sticky top-0 z-50'>
       <div className='max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4'>
-
         {/* LOGO MỚI ĐƯỢC THÊM VÀO ĐÂY */}
         <img
-          src="/logo.svg"
-          alt="SevenStore Logo"
+          src='/logo.svg'
+          alt='SevenStore Logo'
           onClick={() => navigate('/')}
-          className="h-8 sm:h-10 w-auto object-contain cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+          className='h-8 sm:h-10 w-auto object-contain cursor-pointer hover:opacity-80 transition-opacity shrink-0'
         />
 
         <div className='flex-1 flex justify-center relative'>
@@ -199,7 +202,11 @@ function Header() {
                     className='px-4 py-2.5 hover:bg-gray-50 cursor-pointer border-b last:border-none flex items-center gap-3'
                   >
                     {item.thumbnail && (
-                      <img src={item.thumbnail} alt={item.name} className='w-8 h-8 object-cover rounded-lg flex-shrink-0 bg-gray-100' />
+                      <img
+                        src={item.thumbnail}
+                        alt={item.name}
+                        className='w-8 h-8 object-cover rounded-lg flex-shrink-0 bg-gray-100'
+                      />
                     )}
                     <span className='text-sm text-gray-800 font-medium line-clamp-1'>{item.name}</span>
                   </div>
@@ -233,10 +240,16 @@ function Header() {
               onClick={() => navigate('/profile')}
               className='flex items-center gap-2 hover:text-yellow-300 transition group'
             >
-              <div className="w-8 h-8 flex items-center justify-center rounded-full overflow-hidden border-2 border-white/30 group-hover:border-yellow-300 bg-white/20 transition">
-                <User size={18} />
+              <div className='w-8 h-8 flex items-center justify-center rounded-full overflow-hidden border-2 border-white/30 group-hover:border-yellow-300 bg-white/20 transition'>
+                {userInfo.avatar ? (
+                  <img src={userInfo.avatar} alt='Avatar' className='w-full h-full object-cover' />
+                ) : (
+                  <User size={18} />
+                )}
               </div>
-              <span className='hidden sm:inline font-bold truncate max-w-[120px]'>{userInfo.username || 'Người dùng'}</span>
+              <span className='hidden sm:inline font-bold truncate max-w-[120px]'>
+                {userInfo.username || 'Người dùng'}
+              </span>
             </button>
           )}
 
@@ -262,7 +275,7 @@ function Header() {
             >
               <Heart size={20} />
               <span className='hidden sm:inline'>Yêu thích</span>
-              {(wishlistCount > 0) && (
+              {wishlistCount > 0 && (
                 <span className='absolute -top-2 -right-3 bg-yellow-400 text-black text-xs px-2 py-0.5 rounded-full font-bold'>
                   {wishlistCount > 99 ? '99+' : wishlistCount}
                 </span>

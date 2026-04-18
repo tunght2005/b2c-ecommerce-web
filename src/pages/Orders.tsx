@@ -1,20 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Package,
-  Search,
-  ArrowRight,
-  HelpCircle,
-  X,
-  Loader2,
-  Star
-} from 'lucide-react'
+import { Package, Search, ArrowRight, HelpCircle, X, Loader2, Star } from 'lucide-react'
 import ReviewModal from '../components/ReviewModal'
 import { fetchClient } from '../api/fetchClient'
 
+const IMG_FALLBACK =
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'><rect width='400' height='400' fill='%23f3f4f6'/><path d='M160 160c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20zM275 240l-55-70-45 55-25-35-50 70h175z' fill='%23d1d5db'/><text x='50%' y='270' font-family='Arial' font-size='14' font-weight='600' fill='%239ca3af' text-anchor='middle'>Không có ảnh</text></svg>"
+
 // Interface chuẩn hóa theo DB Diagram của nhóm
 interface OrderItem {
-  variant_id: string | { _id: string, name?: string, sku?: string }
+  variant_id: string | { _id: string; name?: string; sku?: string }
   name?: string
   image?: string
   price?: number
@@ -35,7 +30,6 @@ const orderStatuses = [
   { key: 'pending', label: 'Chờ xác nhận' },
   { key: 'confirmed', label: 'Chờ lấy hàng' },
   { key: 'shipping', label: 'Đang giao' },
-  { key: 'delivered', label: 'Đã giao' },
   { key: 'completed', label: 'Viết đánh giá' },
   { key: 'return', label: 'Trả hàng' },
   { key: 'cancelled', label: 'Đã hủy' }
@@ -58,12 +52,18 @@ export default function Orders() {
   const [isLoading, setIsLoading] = useState(true)
 
   // State quản lý Popup Hủy đơn
-  const [cancelModal, setCancelModal] = useState<{ isOpen: boolean; orderId: string | null }>({ isOpen: false, orderId: null })
+  const [cancelModal, setCancelModal] = useState<{ isOpen: boolean; orderId: string | null }>({
+    isOpen: false,
+    orderId: null
+  })
   const [selectedReason, setSelectedReason] = useState('')
   const [isCancelling, setIsCancelling] = useState(false)
 
   // State quản lý Popup Viết đánh giá
-  const [reviewModal, setReviewModal] = useState<{ isOpen: boolean; order: Order | null }>({ isOpen: false, order: null })
+  const [reviewModal, setReviewModal] = useState<{ isOpen: boolean; order: Order | null }>({
+    isOpen: false,
+    order: null
+  })
 
   useEffect(() => {
     const fetchMyOrders = async () => {
@@ -99,11 +99,18 @@ export default function Orders() {
       return: 'bg-red-50 text-red-600 border-red-100'
     }
     const labels: Record<string, string> = {
-      pending: 'Chờ xác nhận', confirmed: 'Chờ lấy hàng', shipping: 'Đang giao',
-      delivered: 'Giao thành công', completed: 'Hoàn thành', cancelled: 'Đã hủy', return: 'Trả hàng/Hoàn tiền'
+      pending: 'Chờ xác nhận',
+      confirmed: 'Chờ lấy hàng',
+      shipping: 'Đang giao',
+      delivered: 'Giao thành công',
+      completed: 'Hoàn thành',
+      cancelled: 'Đã hủy',
+      return: 'Trả hàng/Hoàn tiền'
     }
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles[status] || 'bg-gray-50 text-gray-500 border-gray-100'}`}>
+      <span
+        className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles[status] || 'bg-gray-50 text-gray-500 border-gray-100'}`}
+      >
         {labels[status] || status}
       </span>
     )
@@ -112,37 +119,34 @@ export default function Orders() {
   // Hàm xử lý khi bấm nút "Đồng ý" trong Popup
   const handleSubmitCancel = async () => {
     if (!selectedReason) return alert('Vui lòng chọn lý do hủy đơn!')
-    if (!cancelModal.orderId) return;
+    if (!cancelModal.orderId) return
 
-    setIsCancelling(true);
+    setIsCancelling(true)
     try {
       await fetchClient(`/order/cancel/${cancelModal.orderId}`, {
         method: 'PUT',
         body: JSON.stringify({ reason: selectedReason })
-      });
+      })
 
       // Cập nhật lại status trong danh sách mà không cần reload
-      setOrders(prev => prev.map(o =>
-        o._id === cancelModal.orderId ? { ...o, status: 'cancelled' } : o
-      ));
+      setOrders((prev) => prev.map((o) => (o._id === cancelModal.orderId ? { ...o, status: 'cancelled' } : o)))
 
       // Đóng popup và chuyển trang
-      const cancelledId = cancelModal.orderId;
-      setCancelModal({ isOpen: false, orderId: null });
-      setSelectedReason('');
-      navigate(`/orders/${cancelledId}/cancel-success`);
+      const cancelledId = cancelModal.orderId
+      setCancelModal({ isOpen: false, orderId: null })
+      setSelectedReason('')
+      navigate(`/orders/${cancelledId}/cancel-success`)
     } catch (err: unknown) {
-      const e = err as Error;
-      alert('Hủy đơn thất bại: ' + (e.message || 'Lỗi Server. Vui lòng thử lại!'));
+      const e = err as Error
+      alert('Hủy đơn thất bại: ' + (e.message || 'Lỗi Server. Vui lòng thử lại!'))
     } finally {
-      setIsCancelling(false);
+      setIsCancelling(false)
     }
   }
 
   return (
     <div className='bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 min-h-full'>
       <div className='w-full'>
-
         {/* Banner Chính sách */}
         <div className='bg-white rounded-3xl p-4 sm:p-5 mb-6 flex items-center justify-between shadow-sm border border-red-100 bg-gradient-to-r from-white to-red-50'>
           <div className='flex items-center gap-3'>
@@ -170,8 +174,9 @@ export default function Orders() {
             <button
               key={status.key}
               onClick={() => setActiveTab(status.key)}
-              className={`whitespace-nowrap px-6 py-3 text-sm font-bold transition-all relative ${activeTab === status.key ? 'text-red-600' : 'text-gray-500 hover:text-gray-700'
-                }`}
+              className={`flex-shrink-0 whitespace-nowrap px-6 py-3 text-sm font-bold transition-all relative ${
+                activeTab === status.key ? 'text-red-600' : 'text-gray-500 hover:text-gray-700'
+              }`}
             >
               {status.label}
               {activeTab === status.key && (
@@ -185,7 +190,7 @@ export default function Orders() {
         <div className='space-y-6'>
           {isLoading ? (
             <div className='text-center py-20 bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center'>
-              <Loader2 className="animate-spin text-[#E7000B] mb-4" size={40} />
+              <Loader2 className='animate-spin text-[#E7000B] mb-4' size={40} />
               <p className='text-gray-500 font-medium'>Đang tải danh sách đơn hàng...</p>
             </div>
           ) : filteredOrders.length === 0 ? (
@@ -195,11 +200,16 @@ export default function Orders() {
             </div>
           ) : (
             filteredOrders.map((order) => (
-              <div key={order._id} className='bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition'>
+              <div
+                key={order._id}
+                className='bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition'
+              >
                 <div className='px-6 py-4 bg-gray-50 flex flex-wrap justify-between items-center gap-4 border-b border-gray-100'>
                   <div className='flex items-center gap-3'>
                     <Package className='text-red-600' size={20} />
-                    <span className='font-bold text-gray-900 uppercase'>Mã đơn: Seven-{order._id.substring(order._id.length - 6)}</span>
+                    <span className='font-bold text-gray-900 uppercase'>
+                      Mã đơn: Seven-{order._id.substring(order._id.length - 6)}
+                    </span>
                   </div>
                   {renderStatusBadge(order.status)}
                 </div>
@@ -207,16 +217,32 @@ export default function Orders() {
                 <div className='p-6 space-y-4'>
                   {order.items.map((item, idx) => (
                     <div key={idx} className='flex gap-4 items-start sm:items-center'>
-                      <img src={item.image || 'https://via.placeholder.com/300x300'} className='w-20 h-20 object-cover rounded-2xl bg-gray-100' />
+                      <img
+                        src={item.image || IMG_FALLBACK}
+                        onError={(e) => {
+                          e.currentTarget.src = IMG_FALLBACK
+                          e.currentTarget.onerror = null
+                        }}
+                        className='w-20 h-20 object-cover rounded-2xl bg-gray-100 flex-shrink-0'
+                        alt={item.name || 'Sản phẩm'}
+                      />
                       <div className='flex-1'>
                         <h4 className='font-bold text-gray-900 line-clamp-1'>
-                          {item.name || (typeof item.variant_id === 'object' ? item.variant_id?.name || item.variant_id?.sku : '') || 'Sản phẩm tiêu chuẩn'}
+                          {item.name ||
+                            (typeof item.variant_id === 'object'
+                              ? item.variant_id?.name || item.variant_id?.sku
+                              : '') ||
+                            'Sản phẩm tiêu chuẩn'}
                         </h4>
                         <p className='text-sm text-gray-500 mt-1'>Số lượng: x{item.quantity}</p>
-                        <p className='text-red-600 font-bold mt-1 sm:hidden'>{formatCurrency(item.price || order.final_price / item.quantity)}</p>
+                        <p className='text-red-600 font-bold mt-1 sm:hidden'>
+                          {formatCurrency(item.price || order.final_price / item.quantity)}
+                        </p>
                       </div>
                       <div className='hidden sm:block text-right'>
-                        <p className='font-bold text-gray-900'>{formatCurrency(item.price || order.final_price / item.quantity)}</p>
+                        <p className='font-bold text-gray-900'>
+                          {formatCurrency(item.price || order.final_price / item.quantity)}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -224,7 +250,8 @@ export default function Orders() {
 
                 <div className='px-6 py-5 bg-white border-t border-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4'>
                   <div className='text-sm text-gray-500 italic'>
-                    Ngày đặt: {new Date(order.createdAt || '').toLocaleDateString('vi-VN')} • {order.payment_status === 'paid' ? 'Đã thanh toán' : 'Thanh toán trực tuyến VNPay / COD'}
+                    Ngày đặt: {new Date(order.createdAt || '').toLocaleDateString('vi-VN')} •{' '}
+                    {order.payment_status === 'paid' ? 'Đã thanh toán' : 'Thanh toán trực tuyến VNPay / COD'}
                   </div>
 
                   <div className='flex flex-wrap justify-center gap-3 w-full sm:w-auto'>
@@ -276,74 +303,84 @@ export default function Orders() {
 
       {/* POPUP (MODAL) LÝ DO HỦY ĐƠN */}
       {cancelModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl scale-100 transition-transform">
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm animate-fadeIn'>
+          <div className='bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative scale-100 transition-transform'>
+            <button
+              onClick={() => {
+                setCancelModal({ isOpen: false, orderId: null })
+                setSelectedReason('')
+              }}
+              className='absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition z-10 p-1'
+            >
+              <X size={22} />
+            </button>
 
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h3 className="font-bold text-lg text-gray-900">Lý do hủy đơn</h3>
-              <button
-                onClick={() => {
-                  setCancelModal({ isOpen: false, orderId: null })
-                  setSelectedReason('') // Reset lý do khi tắt popup
-                }}
-                className="text-gray-400 hover:text-gray-600 p-1 bg-gray-50 rounded-full"
-              >
-                <X size={20} />
-              </button>
+            <div className='p-6 border-b border-gray-100 flex items-center gap-3 bg-white'>
+              <div className='w-12 h-12 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0'>
+                <HelpCircle className='text-[#E7000B]' size={26} />
+              </div>
+              <h3 className='font-bold text-xl text-gray-900'>Lý do hủy đơn</h3>
             </div>
 
-            <div className="p-5 space-y-3">
-              <p className="text-sm text-gray-500 mb-4">Vui lòng chọn lý do hủy đơn hàng #{cancelModal.orderId}. Lưu ý, hành động này không thể hoàn tác.</p>
+            <div className='p-6 space-y-3 bg-white'>
+              <p className='text-sm text-gray-500 mb-4 pb-2'>
+                Vui lòng chọn lý do hủy đơn hàng #{cancelModal.orderId}. Lưu ý, hành động này không thể hoàn tác.
+              </p>
 
               {cancelReasonsList.map((reason) => (
                 <div
                   key={reason}
-                  onClick={() => setSelectedReason(reason)} // ĐÃ THÊM SỰ KIỆN CLICK VÀO ĐÂY
-                  className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${selectedReason === reason ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'
-                    }`}
+                  onClick={() => setSelectedReason(reason)}
+                  className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                    selectedReason === reason ? 'border-[#E7000B] bg-red-50' : 'border-gray-200 hover:bg-gray-50'
+                  }`}
                 >
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedReason === reason ? 'border-red-500' : 'border-gray-300'
-                    }`}>
-                    {selectedReason === reason && <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>}
+                  <div
+                    className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                      selectedReason === reason ? 'border-[#E7000B]' : 'border-gray-300'
+                    }`}
+                  >
+                    {selectedReason === reason && <div className='w-2.5 h-2.5 bg-[#E7000B] rounded-full'></div>}
                   </div>
-                  <span className={`text-sm font-medium ${selectedReason === reason ? 'text-red-700' : 'text-gray-700'}`}>
+                  <span
+                    className={`text-sm font-medium leading-snug ${selectedReason === reason ? 'text-gray-900 font-bold' : 'text-gray-700'}`}
+                  >
                     {reason}
                   </span>
                 </div>
               ))}
             </div>
 
-            <div className="p-5 border-t border-gray-100 flex gap-3">
+            <div className='p-6 border-t border-gray-100 flex gap-3 bg-gray-50'>
               <button
                 onClick={() => {
                   setCancelModal({ isOpen: false, orderId: null })
                   setSelectedReason('')
                 }}
-                className="flex-1 py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition"
+                className='flex-1 py-3 bg-white border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition shadow-sm'
               >
-                Không
+                Giữ lại đơn
               </button>
               <button
                 onClick={handleSubmitCancel}
-                disabled={isCancelling}
-                className={`flex-1 py-3.5 rounded-2xl font-bold text-white transition shadow-lg flex items-center justify-center gap-2 ${selectedReason && !isCancelling ? 'bg-red-600 hover:bg-red-700 shadow-red-200' : 'bg-gray-300 cursor-not-allowed shadow-none'
-                  }`}
+                disabled={isCancelling || !selectedReason}
+                className={`flex-1 flex justify-center items-center gap-2 py-3 rounded-xl font-semibold transition shadow-md ${
+                  selectedReason && !isCancelling
+                    ? 'bg-[#E7000B] text-white hover:bg-[#C10008] shadow-red-200'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                }`}
               >
-                {isCancelling && <Loader2 size={18} className="animate-spin" />}
-                {isCancelling ? 'Đang xử lý...' : 'Đồng ý'}
+                {isCancelling && <Loader2 size={18} className='animate-spin text-gray-500' />}
+                {isCancelling ? 'Đang xử lý...' : 'Xác nhận hủy'}
               </button>
             </div>
-
           </div>
         </div>
       )}
 
       {/* POPUP VIẾT ĐÁNH GIÁ */}
       {reviewModal.isOpen && reviewModal.order && (
-        <ReviewModal
-          order={reviewModal.order}
-          onClose={() => setReviewModal({ isOpen: false, order: null })}
-        />
+        <ReviewModal order={reviewModal.order} onClose={() => setReviewModal({ isOpen: false, order: null })} />
       )}
 
       <style>{`

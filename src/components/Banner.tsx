@@ -60,8 +60,8 @@ function Banner() {
 
   // HÀM PHÁT SỰ KIỆN MỞ MODAL
   const triggerAuthModal = () => {
-    window.dispatchEvent(new CustomEvent('openAuthModal', { detail: { view: 'login' } }));
-  };
+    window.dispatchEvent(new CustomEvent('openAuthModal', { detail: { view: 'login' } }))
+  }
 
   return (
     <section className='max-w-7xl mx-auto px-4 mt-6 space-y-4'>
@@ -74,7 +74,7 @@ function Banner() {
             <p className='text-gray-500 text-xs mt-2'>Đăng ký để nhận ưu đãi hấp dẫn</p>
 
             {/* GẮN SỰ KIỆN VÀO NÚT NÀY */}
-            <button 
+            <button
               onClick={triggerAuthModal}
               className='mt-3 w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition'
             >
@@ -83,7 +83,7 @@ function Banner() {
           </div>
 
           {/* Ẩn các banner phụ bên trái trên mobile để đỡ dài màn hình, chỉ hiện trên màn hình to (lg:block) */}
-          <div className="hidden lg:block space-y-4">
+          <div className='hidden lg:block space-y-4'>
             {leftBanners.map((item, i) => (
               <div key={i} className='bg-white p-4 rounded-xl shadow hover:shadow-lg transition'>
                 <p className='font-semibold text-sm'>{item.title}</p>
@@ -120,7 +120,9 @@ function Banner() {
               <p className='text-xs lg:text-sm opacity-90'>📱 {item.title}</p>
               <h3 className='text-sm sm:text-lg lg:text-xl font-bold mt-1'>{item.highlight}</h3>
               <p className='hidden lg:block text-xs mt-2 opacity-80'>Áp dụng ngay hôm nay</p>
-              <button className='mt-2 lg:mt-3 bg-white text-black text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded-lg font-semibold w-fit'>Xem ngay</button>
+              <button className='mt-2 lg:mt-3 bg-white text-black text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded-lg font-semibold w-fit'>
+                Xem ngay
+              </button>
             </div>
           ))}
         </div>

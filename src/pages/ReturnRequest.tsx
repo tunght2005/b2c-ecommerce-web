@@ -1,8 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  Camera, AlertCircle, ChevronLeft, Send, Loader2,
-  PackageX, CheckCircle2, ShieldAlert, Info, X
+  Camera,
+  AlertCircle,
+  ChevronLeft,
+  Send,
+  Loader2,
+  PackageX,
+  CheckCircle2,
+  ShieldAlert,
+  Info,
+  X
 } from 'lucide-react'
 import { fetchClient } from '../api/fetchClient'
 import { resolveImageUrl } from '../api/config'
@@ -15,7 +23,7 @@ interface Policy {
 }
 
 interface EligibleItem {
-  order_item_id: string   // format: "orderId:index"
+  order_item_id: string // format: "orderId:index"
   product_id: string
   product_name: string
   product_image: string
@@ -33,11 +41,11 @@ const RETURN_REASONS = [
   'Sản phẩm bị hư hỏng do vận chuyển',
   'Sản phẩm không giống mô tả',
   'Sản phẩm thiếu phụ kiện',
-  'Lý do khác',
+  'Lý do khác'
 ]
 
 export default function ReturnRequest() {
-  const { id } = useParams()     // order id
+  const { id } = useParams() // order id
   const navigate = useNavigate()
 
   const [items, setItems] = useState<EligibleItem[]>([])
@@ -56,8 +64,7 @@ export default function ReturnRequest() {
   const [success, setSuccess] = useState(false)
   const [alreadyReturned, setAlreadyReturned] = useState(false)
 
-  const formatCurrency = (n: number) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n)
+  const formatCurrency = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n)
 
   // Load eligible items của đơn hàng này
   useEffect(() => {
@@ -83,7 +90,9 @@ export default function ReturnRequest() {
             setLoading(false)
             return
           }
-        } catch { /* bỏ qua, vẫn cho phép tiếp tục */ }
+        } catch {
+          /* bỏ qua, vẫn cho phép tiếp tục */
+        }
         // Gọi không có search filter — lấy TẤT CẢ eligible items của user
         // sau đó lọc client-side theo order id
         const res = await fetchClient<any>(`/after-sales/returns/eligible-items`)
@@ -92,7 +101,8 @@ export default function ReturnRequest() {
         // Handle mọi dạng response từ BE
         let allItems: any[] = []
         if (Array.isArray(res)) allItems = res
-        else if (Array.isArray(res?.data?.items)) allItems = res.data.items   // { data: { items: [] } }
+        else if (Array.isArray(res?.data?.items))
+          allItems = res.data.items // { data: { items: [] } }
         else if (Array.isArray(res?.data)) allItems = res.data
         else if (Array.isArray(res?.items)) allItems = res.items
         else if (Array.isArray(res?.eligible_items)) allItems = res.eligible_items
@@ -116,11 +126,17 @@ export default function ReturnRequest() {
         let allActivePolicies: Policy[] = []
         try {
           const polAllRes = await fetchClient<any>('/after-sales/return-policies')
-          const polAll = Array.isArray(polAllRes) ? polAllRes
-            : Array.isArray(polAllRes?.data) ? polAllRes.data
-            : Array.isArray(polAllRes?.data?.items) ? polAllRes.data.items : []
+          const polAll = Array.isArray(polAllRes)
+            ? polAllRes
+            : Array.isArray(polAllRes?.data)
+              ? polAllRes.data
+              : Array.isArray(polAllRes?.data?.items)
+                ? polAllRes.data.items
+                : []
           allActivePolicies = polAll.filter((p: any) => p.is_active)
-        } catch { /* bỏ qua */ }
+        } catch {
+          /* bỏ qua */
+        }
 
         // Với mỗi item, build EligibleItem
         const enriched: EligibleItem[] = await Promise.all(
@@ -130,7 +146,9 @@ export default function ReturnRequest() {
             const variantObj = item.variant
             const productId: string = productObj?._id || variantObj?.product_id || ''
             const productName: string = productObj?.name || variantObj?.sku || item.name || 'Sản phẩm'
-            const productImage: string = resolveImageUrl(productObj?.thumbnail || productObj?.image || item.image) || 'https://via.placeholder.com/80'
+            const productImage: string =
+              resolveImageUrl(productObj?.thumbnail || productObj?.image || item.image) ||
+              'https://via.placeholder.com/80'
 
             // Load policy theo product nếu có, ngược lại dùng allActivePolicies
             let policies: Policy[] = allActivePolicies
@@ -140,7 +158,9 @@ export default function ReturnRequest() {
                 const polList = Array.isArray(polRes) ? polRes : (polRes?.data ?? [])
                 const filtered = polList.filter((p: any) => p.is_active)
                 if (filtered.length > 0) policies = filtered
-              } catch { /* dùng allActivePolicies */ }
+              } catch {
+                /* dùng allActivePolicies */
+              }
             }
 
             return {
@@ -153,7 +173,7 @@ export default function ReturnRequest() {
               price: item.price || 0,
               order_created_at: item.order_created_at || item.created_at || '',
               days_remaining: item.days_remaining ?? 0,
-              policies,
+              policies
             }
           })
         )
@@ -187,9 +207,18 @@ export default function ReturnRequest() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedItem) { setSubmitError('Vui lòng chọn sản phẩm cần hoàn trả.'); return }
-    if (!selectedPolicy) { setSubmitError('Vui lòng chọn chính sách hoàn trả.'); return }
-    if (!finalReason.trim()) { setSubmitError('Vui lòng chọn hoặc nhập lý do hoàn trả.'); return }
+    if (!selectedItem) {
+      setSubmitError('Vui lòng chọn sản phẩm cần hoàn trả.')
+      return
+    }
+    if (!selectedPolicy) {
+      setSubmitError('Vui lòng chọn chính sách hoàn trả.')
+      return
+    }
+    if (!finalReason.trim()) {
+      setSubmitError('Vui lòng chọn hoặc nhập lý do hoàn trả.')
+      return
+    }
 
     try {
       setSubmitting(true)
@@ -223,7 +252,8 @@ export default function ReturnRequest() {
           </div>
           <h2 className='text-2xl font-bold text-gray-900 mb-2'>Đã gửi yêu cầu trước đó</h2>
           <p className='text-gray-500 mb-6'>
-            Bạn đã gửi yêu cầu hoàn trả cho đơn hàng này rồi. Vui lòng kiểm tra trạng thái tại trang <strong>Lịch sử hoàn trả</strong>.
+            Bạn đã gửi yêu cầu hoàn trả cho đơn hàng này rồi. Vui lòng kiểm tra trạng thái tại trang{' '}
+            <strong>Lịch sử hoàn trả</strong>.
           </p>
           <div className='flex flex-col gap-3'>
             <button
@@ -246,7 +276,6 @@ export default function ReturnRequest() {
 
   // ---------- SUCCESS SCREEN ----------
   if (success) {
-
     return (
       <div className='bg-gray-50 min-h-screen flex items-center justify-center py-10 px-4'>
         <div className='bg-white rounded-3xl p-8 max-w-md w-full shadow-sm border border-gray-100 text-center'>
@@ -258,10 +287,22 @@ export default function ReturnRequest() {
             Chúng tôi đã nhận được yêu cầu hoàn trả của bạn và sẽ xử lý trong vòng <strong>1–3 ngày làm việc</strong>.
           </p>
           <div className='bg-gray-50 rounded-2xl p-4 mb-6 text-left space-y-2 text-sm'>
-            <div className='flex justify-between'><span className='text-gray-500'>Sản phẩm</span><span className='font-medium text-gray-800'>{selectedItem?.product_name}</span></div>
-            <div className='flex justify-between'><span className='text-gray-500'>Chính sách</span><span className='font-medium'>{selectedPolicy?.name}</span></div>
-            <div className='flex justify-between'><span className='text-gray-500'>Lý do</span><span className='font-medium'>{finalReason}</span></div>
-            <div className='flex justify-between'><span className='text-gray-500'>Số tiền hoàn</span><span className='font-semibold text-red-600'>{formatCurrency(refundAmount)}</span></div>
+            <div className='flex justify-between'>
+              <span className='text-gray-500'>Sản phẩm</span>
+              <span className='font-medium text-gray-800'>{selectedItem?.product_name}</span>
+            </div>
+            <div className='flex justify-between'>
+              <span className='text-gray-500'>Chính sách</span>
+              <span className='font-medium'>{selectedPolicy?.name}</span>
+            </div>
+            <div className='flex justify-between'>
+              <span className='text-gray-500'>Lý do</span>
+              <span className='font-medium'>{finalReason}</span>
+            </div>
+            <div className='flex justify-between'>
+              <span className='text-gray-500'>Số tiền hoàn</span>
+              <span className='font-semibold text-red-600'>{formatCurrency(refundAmount)}</span>
+            </div>
           </div>
           <button
             onClick={() => navigate('/profile/orders')}
@@ -277,9 +318,11 @@ export default function ReturnRequest() {
   return (
     <div className='bg-gray-50 min-h-screen py-6 sm:py-10'>
       <div className='max-w-2xl mx-auto px-4'>
-
         {/* Back */}
-        <button onClick={() => navigate(-1)} className='flex items-center gap-2 text-gray-500 hover:text-red-600 mb-6 transition font-medium'>
+        <button
+          onClick={() => navigate(-1)}
+          className='flex items-center gap-2 text-gray-500 hover:text-red-600 mb-6 transition font-medium'
+        >
           <ChevronLeft size={20} /> Quay lại đơn hàng
         </button>
 
@@ -309,7 +352,9 @@ export default function ReturnRequest() {
               <div className='text-center py-12'>
                 <ShieldAlert size={48} className='mx-auto text-gray-300 mb-4' />
                 <p className='text-gray-600 font-medium mb-1'>{error}</p>
-                <p className='text-gray-400 text-sm'>Đơn hàng này có thể không đủ điều kiện hoàn trả hoặc đã hết thời hạn.</p>
+                <p className='text-gray-400 text-sm'>
+                  Đơn hàng này có thể không đủ điều kiện hoàn trả hoặc đã hết thời hạn.
+                </p>
               </div>
             )}
 
@@ -317,17 +362,20 @@ export default function ReturnRequest() {
               <div className='text-center py-12'>
                 <ShieldAlert size={48} className='mx-auto text-gray-300 mb-4' />
                 <p className='text-gray-600 font-medium mb-1'>Không tìm thấy sản phẩm đủ điều kiện</p>
-                <p className='text-gray-400 text-sm'>Đơn hàng này chưa đủ điều kiện hoàn trả hoặc đã hết thời hạn chính sách.</p>
+                <p className='text-gray-400 text-sm'>
+                  Đơn hàng này chưa đủ điều kiện hoàn trả hoặc đã hết thời hạn chính sách.
+                </p>
               </div>
             )}
 
             {!loading && !error && items.length > 0 && (
               <form onSubmit={handleSubmit} className='space-y-7'>
-
                 {/* STEP 1: Chọn sản phẩm */}
                 <section>
                   <h2 className='font-bold text-gray-800 mb-3 flex items-center gap-2'>
-                    <span className='w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold'>1</span>
+                    <span className='w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold'>
+                      1
+                    </span>
                     Sản phẩm hoàn trả
                   </h2>
                   <div className='space-y-3'>
@@ -342,7 +390,11 @@ export default function ReturnRequest() {
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        <img src={item.product_image} alt='' className='w-16 h-16 object-cover rounded-xl flex-shrink-0 bg-gray-100' />
+                        <img
+                          src={item.product_image}
+                          alt=''
+                          className='w-16 h-16 object-cover rounded-xl flex-shrink-0 bg-gray-100'
+                        />
                         <div className='flex-1 min-w-0'>
                           <p className='font-semibold text-gray-900 line-clamp-1'>{item.product_name}</p>
                           {item.variant_name && <p className='text-sm text-gray-500'>{item.variant_name}</p>}
@@ -355,11 +407,13 @@ export default function ReturnRequest() {
                             )}
                           </div>
                         </div>
-                        <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 ${
-                          selectedItem?.order_item_id === item.order_item_id
-                            ? 'border-red-500 bg-red-500'
-                            : 'border-gray-300'
-                        }`}>
+                        <div
+                          className={`w-5 h-5 rounded-full border-2 flex-shrink-0 ${
+                            selectedItem?.order_item_id === item.order_item_id
+                              ? 'border-red-500 bg-red-500'
+                              : 'border-gray-300'
+                          }`}
+                        >
                           {selectedItem?.order_item_id === item.order_item_id && (
                             <div className='w-full h-full flex items-center justify-center'>
                               <div className='w-2 h-2 bg-white rounded-full' />
@@ -375,17 +429,21 @@ export default function ReturnRequest() {
                 {selectedItem && (
                   <section>
                     <h2 className='font-bold text-gray-800 mb-3 flex items-center gap-2'>
-                      <span className='w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold'>2</span>
+                      <span className='w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold'>
+                        2
+                      </span>
                       Chính sách hoàn trả
                     </h2>
                     {selectedItem.policies.length === 0 ? (
                       <div className='bg-orange-50 border border-orange-200 rounded-2xl p-4 flex items-start gap-3'>
                         <Info size={18} className='text-orange-500 flex-shrink-0 mt-0.5' />
-                        <p className='text-orange-700 text-sm'>Sản phẩm này chưa có chính sách hoàn trả.  Vui lòng liên hệ CSKH để được hỗ trợ.</p>
+                        <p className='text-orange-700 text-sm'>
+                          Sản phẩm này chưa có chính sách hoàn trả. Vui lòng liên hệ CSKH để được hỗ trợ.
+                        </p>
                       </div>
                     ) : (
                       <div className='space-y-2'>
-                        {selectedItem.policies.map(pol => (
+                        {selectedItem.policies.map((pol) => (
                           <button
                             type='button'
                             key={pol._id}
@@ -398,10 +456,18 @@ export default function ReturnRequest() {
                           >
                             <div className='flex-1'>
                               <p className='font-semibold text-gray-800'>{pol.name}</p>
-                              <p className='text-sm text-gray-500'>Trong vòng {pol.days_allowed} ngày kể từ ngày đặt hàng</p>
+                              <p className='text-sm text-gray-500'>
+                                Trong vòng {pol.days_allowed} ngày kể từ ngày đặt hàng
+                              </p>
                             </div>
-                            <div className={`w-5 h-5 flex-shrink-0 rounded-full border-2 ${selectedPolicy?._id === pol._id ? 'border-red-500 bg-red-500' : 'border-gray-300'}`}>
-                              {selectedPolicy?._id === pol._id && <div className='w-full h-full flex items-center justify-center'><div className='w-2 h-2 bg-white rounded-full'/></div>}
+                            <div
+                              className={`w-5 h-5 flex-shrink-0 rounded-full border-2 ${selectedPolicy?._id === pol._id ? 'border-red-500 bg-red-500' : 'border-gray-300'}`}
+                            >
+                              {selectedPolicy?._id === pol._id && (
+                                <div className='w-full h-full flex items-center justify-center'>
+                                  <div className='w-2 h-2 bg-white rounded-full' />
+                                </div>
+                              )}
                             </div>
                           </button>
                         ))}
@@ -414,11 +480,13 @@ export default function ReturnRequest() {
                 {selectedItem && selectedPolicy && (
                   <section>
                     <h2 className='font-bold text-gray-800 mb-3 flex items-center gap-2'>
-                      <span className='w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold'>3</span>
+                      <span className='w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold'>
+                        3
+                      </span>
                       Lý do hoàn trả
                     </h2>
                     <div className='grid gap-2'>
-                      {RETURN_REASONS.map(r => (
+                      {RETURN_REASONS.map((r) => (
                         <button
                           key={r}
                           type='button'
@@ -439,7 +507,7 @@ export default function ReturnRequest() {
                         rows={3}
                         placeholder='Mô tả lý do của bạn...'
                         value={customReason}
-                        onChange={e => setCustomReason(e.target.value)}
+                        onChange={(e) => setCustomReason(e.target.value)}
                         className='mt-3 w-full border border-gray-200 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-red-100 focus:border-red-500 outline-none resize-none'
                       />
                     )}
@@ -450,20 +518,24 @@ export default function ReturnRequest() {
                 {selectedItem && selectedPolicy && reason && (
                   <section>
                     <h2 className='font-bold text-gray-800 mb-3 flex items-center gap-2'>
-                      <span className='w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold'>4</span>
+                      <span className='w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold'>
+                        4
+                      </span>
                       Thông tin bổ sung
                     </h2>
 
                     <div className='space-y-4'>
                       {/* Số tiền hoàn */}
                       <div>
-                        <label className='block text-sm font-semibold text-gray-700 mb-1.5'>Số tiền yêu cầu hoàn (VNĐ)</label>
+                        <label className='block text-sm font-semibold text-gray-700 mb-1.5'>
+                          Số tiền yêu cầu hoàn (VNĐ)
+                        </label>
                         <input
                           type='number'
                           min={0}
                           max={selectedItem.price}
                           value={refundAmount}
-                          onChange={e => setRefundAmount(Number(e.target.value))}
+                          onChange={(e) => setRefundAmount(Number(e.target.value))}
                           className='w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 focus:border-red-500 outline-none'
                         />
                         <p className='text-xs text-gray-400 mt-1 flex items-center gap-1'>
@@ -480,7 +552,7 @@ export default function ReturnRequest() {
                           type='url'
                           placeholder='https://...'
                           value={evidenceUrl}
-                          onChange={e => setEvidenceUrl(e.target.value)}
+                          onChange={(e) => setEvidenceUrl(e.target.value)}
                           className='w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 focus:border-red-500 outline-none'
                         />
                         <p className='text-xs text-gray-400 mt-1 flex items-center gap-1'>
@@ -510,7 +582,6 @@ export default function ReturnRequest() {
                     {submitting ? 'Đang gửi...' : 'Gửi yêu cầu hoàn trả'}
                   </button>
                 )}
-
               </form>
             )}
           </div>
