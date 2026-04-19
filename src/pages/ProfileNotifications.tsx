@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Bell, CheckCircle2, Clock, Trash2, CheckCheck, Loader2, Info, Package, Tag, AlertCircle } from 'lucide-react'
+import { Bell, Clock, CheckCheck, Loader2, Info, Package, Tag } from 'lucide-react'
 import { fetchClient } from '../api/fetchClient'
 
 interface Notification {
@@ -21,7 +21,12 @@ export default function ProfileNotifications() {
       setIsLoading(true)
       const res = await fetchClient<any>('/notification')
       // Vét cạn dữ liệu
-      const data = res?.data || (Array.isArray(res) ? res : [])
+      let data: any[] = []
+      if (Array.isArray(res)) data = res
+      else if (res?.data && Array.isArray(res.data)) data = res.data
+      else if (res?.notifications && Array.isArray(res.notifications)) data = res.notifications
+      else if (res?.data?.notifications && Array.isArray(res.data.notifications)) data = res.data.notifications
+
       setNotifications(data)
     } catch (err) {
       console.error('Lỗi lấy thông báo:', err)

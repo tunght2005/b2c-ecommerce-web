@@ -48,8 +48,8 @@ export default function CategorySection({ title, banner }: Props) {
                 fetchClient(`/product-images/product/${prod._id}`).catch(() => [])
               ])
 
-              const variants = Array.isArray(variantsRes) ? variantsRes : variantsRes?.data || []
-              const images = Array.isArray(imagesRes) ? imagesRes : imagesRes?.data || []
+              const variants = Array.isArray(variantsRes) ? variantsRes : (variantsRes as any)?.data || []
+              const images = Array.isArray(imagesRes) ? imagesRes : (imagesRes as any)?.data || []
 
               return {
                 ...prod,

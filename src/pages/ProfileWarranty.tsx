@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { fetchClient } from '../api/fetchClient'
-import { Shield, AlertTriangle, Calendar, PenTool, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Shield, AlertTriangle, Calendar, PenTool, CheckCircle2 } from 'lucide-react'
 import { showToast } from '../components/Toast'
 
 interface Warranty {
@@ -29,7 +29,6 @@ export default function ProfileWarranty() {
   const [selectedWarranty, setSelectedWarranty] = useState<Warranty | null>(null)
   const [issueDescription, setIssueDescription] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const [rawResponse, setRawResponse] = useState<any>(null)
 
@@ -40,13 +39,14 @@ export default function ProfileWarranty() {
       setRawResponse(res)
       // Vét cạn dữ liệu mảng như rule đã đề ra
       let dataItems: any[] = []
-      if (Array.isArray(res)) dataItems = res
-      else if (res?.data && Array.isArray(res.data)) dataItems = res.data
-      else if (res?.data?.records && Array.isArray(res.data.records)) dataItems = res.data.records
-      else if (res?.data?.items && Array.isArray(res.data.items)) dataItems = res.data.items
-      else if (res?.data?.data && Array.isArray(res.data.data)) dataItems = res.data.data
-      else if (res?.warranties && Array.isArray(res.warranties)) dataItems = res.warranties
-      else if (res?.data?.warranties && Array.isArray(res.data.warranties)) dataItems = res.data.warranties
+      const resAny = res as any
+      if (Array.isArray(resAny)) dataItems = resAny
+      else if (resAny?.data && Array.isArray(resAny.data)) dataItems = resAny.data
+      else if (resAny?.data?.records && Array.isArray(resAny.data.records)) dataItems = resAny.data.records
+      else if (resAny?.data?.items && Array.isArray(resAny.data.items)) dataItems = resAny.data.items
+      else if (resAny?.data?.data && Array.isArray(resAny.data.data)) dataItems = resAny.data.data
+      else if (resAny?.warranties && Array.isArray(resAny.warranties)) dataItems = resAny.warranties
+      else if (resAny?.data?.warranties && Array.isArray(resAny.data.warranties)) dataItems = resAny.data.warranties
 
       setWarranties(dataItems)
     } catch (error) {

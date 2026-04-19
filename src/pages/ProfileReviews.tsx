@@ -1,15 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {
-  Star,
-  Loader2,
-  Trash2,
-  Edit,
-  AlertCircle,
-  ChevronDown,
-  CheckCircle2,
-  UserCircle2,
-  ExternalLink
-} from 'lucide-react'
+import { Star, Loader2, Trash2, AlertCircle, ChevronDown, ExternalLink } from 'lucide-react'
 import { fetchClient } from '../api/fetchClient'
 import { resolveImageUrl } from '../api/config'
 import { Link } from 'react-router-dom'

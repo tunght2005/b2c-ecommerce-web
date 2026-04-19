@@ -121,7 +121,7 @@ export default function AIChat() {
         created_at: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
       }
       setMessages((prev) => [...prev, aiMsg])
-    } catch (err: any) {
+    } catch {
       const errorMsg: Message = {
         id: Date.now() + 1,
         role: 'ai',
