@@ -1,0 +1,2 @@
+src/pages/OrderDetail.tsx(2,58): error TS6133: 'CreditCard' is declared but its value is never read.
+src/pages/ReturnPolicy.tsx(1,10): error TS6133: 'ShieldCheck' is declared but its value is never read.

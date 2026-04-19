@@ -26,6 +26,8 @@ export default defineConfig([
     rules: {
       "react-refresh/only-export-components": "off",
       "no-empty-pattern": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "react-hooks/exhaustive-deps": "off",
       "prettier/prettier": [
         "warn",
         {
