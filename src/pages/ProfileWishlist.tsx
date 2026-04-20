@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Heart, Loader2, Trash2, ArrowRight, Star, ShoppingCart, ShoppingBag } from 'lucide-react'
+import { Heart, Loader2, Trash2, ArrowRight, Star } from 'lucide-react'
 import { fetchClient } from '../api/fetchClient'
 import { resolveImageUrl } from '../api/config'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useWishlist } from '../context/WishlistContext'
 
 interface WishlistItem {
@@ -18,11 +18,9 @@ interface WishlistItem {
 }
 
 export default function ProfileWishlist() {
-  const navigate = useNavigate()
   const [items, setItems] = useState<WishlistItem[]>([])
   const [loading, setLoading] = useState(true)
-  const { toggleWishlist, refreshWishlist } = useWishlist()
-  const [addingId, setAddingId] = useState<string | null>(null)
+  const { refreshWishlist } = useWishlist()
 
   const fetchWishlistItems = async () => {
     try {
@@ -56,7 +54,7 @@ export default function ProfileWishlist() {
     try {
       await fetchClient(`/wishlist/product/${productId}`, { method: 'DELETE' })
       refreshWishlist() // Sync with global context
-    } catch (err) {
+    } catch {
       alert('Không thể xóa sản phẩm khỏi Wishlist.')
       fetchWishlistItems() // Revert
     }
@@ -68,39 +66,9 @@ export default function ProfileWishlist() {
     try {
       await fetchClient('/wishlist', { method: 'DELETE' })
       refreshWishlist()
-    } catch (err) {
+    } catch {
       alert('Chưa xóa được toàn bộ danh sách.')
       fetchWishlistItems() // Revert
-    }
-  }
-
-  const handleAddToCart = async (p: any, e: React.MouseEvent, buyNow = false) => {
-    e.preventDefault()
-    e.stopPropagation()
-
-    setAddingId(p._id)
-    try {
-      await fetchClient('/cart/add', {
-        method: 'POST',
-        body: JSON.stringify({
-          variant_id: p._id, // Fallback dùng product_id làm variant_id khi mua trực tiếp
-          quantity: 1
-        })
-      })
-      // Bắn event để Header update số lượng giỏ hàng
-      window.dispatchEvent(new CustomEvent('addToCart', { detail: { product: p } }))
-
-      if (buyNow) {
-        navigate('/cart')
-      } else {
-        alert('Đã thêm sản phẩm vào giỏ hàng!')
-      }
-    } catch (err: any) {
-      alert(err.message || 'Không thể thêm vào giỏ hàng, vui lòng vào trang chi tiết sản phẩm để mua!')
-      // Luôn dẫn về trang chi tiết nếu backend từ chối (có thể do thiếu variant thực sự)
-      navigate(`/product/${p._id}`)
-    } finally {
-      setAddingId(null)
     }
   }
 

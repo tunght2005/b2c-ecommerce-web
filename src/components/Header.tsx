@@ -107,7 +107,13 @@ function Header() {
         headers: { Authorization: `Bearer ${rawToken}` }
       })
       const data = await res.json()
-      const notifications = data?.data || (Array.isArray(data) ? data : [])
+      let notifications: any[] = []
+      if (Array.isArray(data)) notifications = data
+      else if (data?.data && Array.isArray(data.data)) notifications = data.data
+      else if (data?.notifications && Array.isArray(data.notifications)) notifications = data.notifications
+      else if (data?.data?.notifications && Array.isArray(data.data.notifications))
+        notifications = data.data.notifications
+
       const unreadCount = notifications.filter((n: any) => !n.is_read).length
       setNotiCount(unreadCount)
     } catch (error) {
@@ -260,8 +266,8 @@ function Header() {
             >
               <Bell size={20} />
               {notiCount > 0 && (
-                <span className='absolute -top-1.5 -right-2 bg-yellow-400 text-black text-[10px] w-4 h-4 flex items-center justify-center rounded-full font-bold border-2 border-red-600'>
-                  {notiCount > 9 ? '9+' : notiCount}
+                <span className='absolute -top-2 -right-3 bg-yellow-400 text-black text-xs px-2 py-0.5 rounded-full font-bold'>
+                  {notiCount > 99 ? '99+' : notiCount}
                 </span>
               )}
             </button>

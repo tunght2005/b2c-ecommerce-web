@@ -1,8 +1,7 @@
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useState, useEffect, useMemo } from 'react'
 import {
   SlidersHorizontal,
-  ChevronDown,
   Star,
   Flame,
   ArrowDownWideNarrow,
@@ -34,7 +33,7 @@ export default function CategoryPage() {
 
         // 1. Lấy Brands
         const bRes = await fetchClient<any>('/brands').catch(() => [])
-        const bData = Array.isArray(bRes) ? bRes : bRes?.data || []
+        const bData = Array.isArray(bRes) ? bRes : (bRes as any)?.data || []
         setBrands(
           bData.map((b: any) => ({
             id: b._id || b.id,
@@ -45,7 +44,7 @@ export default function CategoryPage() {
 
         // 2. Lấy Products
         const pRes = await fetchClient<any>('/products').catch(() => [])
-        const baseProducts: Product[] = Array.isArray(pRes) ? pRes : pRes?.data || []
+        const baseProducts: Product[] = Array.isArray(pRes) ? pRes : (pRes as any)?.data || []
 
         // 3. Enrich Products (Call API chi tiết cho từng máy để có ảnh bìa & giá thấp nhất)
         const enrichedProducts = await Promise.all(
@@ -55,8 +54,8 @@ export default function CategoryPage() {
                 fetchClient(`/variants/product/${prod._id}`).catch(() => []),
                 fetchClient(`/product-images/product/${prod._id}`).catch(() => [])
               ])
-              const variants = Array.isArray(variantsRes) ? variantsRes : variantsRes?.data || []
-              const images = Array.isArray(imagesRes) ? imagesRes : imagesRes?.data || []
+              const variants = Array.isArray(variantsRes) ? variantsRes : (variantsRes as any)?.data || []
+              const images = Array.isArray(imagesRes) ? imagesRes : (imagesRes as any)?.data || []
 
               return {
                 ...prod,
