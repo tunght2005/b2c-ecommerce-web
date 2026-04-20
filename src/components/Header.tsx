@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, ShoppingCart, User, Bell, Heart } from 'lucide-react'
+import { Search, ShoppingCart, User, Bell, Heart, Moon, Sun } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import AuthModal from './AuthModal'
 import { USER_INFO_KEY } from '../api/config'
@@ -10,6 +10,7 @@ function Header() {
   const [keyword, setKeyword] = useState('')
   const [suggestions, setSuggestions] = useState<Array<{ _id: string; name: string; thumbnail?: string }>>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [isDark, setIsDark] = useState(false)
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const navigate = useNavigate()
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
@@ -22,6 +23,30 @@ function Header() {
   // --- STATE MỚI: Quản lý đăng nhập Profile ---
   const [userInfo, setUserInfo] = useState<any>(null)
   const [notiCount, setNotiCount] = useState(0)
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('theme')
+    const isSystemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+    const initialMode = storedTheme ? storedTheme === 'dark' : isSystemDark
+    setIsDark(initialMode)
+  }, [])
+
+  useEffect(() => {
+    const root = document.documentElement
+    if (isDark) {
+      root.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
+    } else {
+      root.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+    }
+
+    const themeColor = isDark ? '#020617' : '#f3f4f6'
+    const metaTheme = document.querySelector('meta[name="theme-color"]')
+    if (metaTheme) metaTheme.setAttribute('content', themeColor)
+  }, [isDark])
+
+  const toggleTheme = () => setIsDark((prev) => !prev)
 
   const openAuthModal = (view: 'login' | 'register') => {
     setAuthInitialView(view)
@@ -175,7 +200,7 @@ function Header() {
   }
 
   return (
-    <header className='bg-red-600 text-white shadow-md sticky top-0 z-50'>
+    <header className='theme-header shadow-md sticky top-0 z-50'>
       <div className='max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4'>
         {/* LOGO MỚI ĐƯỢC THÊM VÀO ĐÂY */}
         <img
@@ -192,7 +217,7 @@ function Header() {
               value={keyword}
               onChange={(e) => handleSearch(e.target.value)}
               placeholder='Tìm kiếm điện thoại, laptop...'
-              className='w-full pl-10 pr-4 py-2 rounded-xl text-black outline-none focus:ring-2 focus:ring-yellow-400'
+              className='w-full pl-10 pr-4 py-2 rounded-xl text-black outline-none focus:ring-2 focus:ring-yellow-400 theme-search'
             />
             {suggestions.length > 0 && (
               <div className='absolute top-full left-0 w-full bg-white text-black rounded-xl shadow-lg mt-2 z-50 overflow-hidden'>
@@ -288,6 +313,15 @@ function Header() {
               )}
             </button>
           )}
+
+          <button
+            onClick={toggleTheme}
+            className='flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white rounded-full px-3 py-2 transition shadow-sm border border-white/20'
+            title={isDark ? 'Chế độ sáng' : 'Chế độ tối'}
+          >
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            <span className='hidden sm:inline text-sm font-semibold'>{isDark ? 'Sáng' : 'Tối'}</span>
+          </button>
 
           <button
             onClick={() => navigate('/cart')}
