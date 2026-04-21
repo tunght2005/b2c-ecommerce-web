@@ -29,7 +29,7 @@ function Navbar() {
   ]
 
   return (
-    <nav className='bg-white border-b shadow-sm sticky top-[72px] z-40'>
+    <nav className='theme-navbar border-b shadow-sm sticky top-[72px] z-40'>
       <div className='max-w-7xl mx-auto'>
         {/* LỚP NGOÀI: Tạo vùng cuộn */}
         <div className='overflow-x-auto md:overflow-visible no-scrollbar'>

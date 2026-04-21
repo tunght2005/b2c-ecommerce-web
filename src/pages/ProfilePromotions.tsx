@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchClient } from '../api/fetchClient'
+import { showToast } from '../components/Toast'
 import { Ticket, Clock, Percent, Zap, CheckCircle2 } from 'lucide-react'
 
 interface Promotion {
@@ -26,17 +27,29 @@ export default function ProfilePromotions() {
   const fetchPromotions = async () => {
     try {
       setLoading(true)
-      const res = await fetchClient<any>('/promotions')
+      const [promoRes, voucherRes] = await Promise.all([
+        fetchClient<any>('/promotions').catch(() => null),
+        fetchClient<any>('/vouchers').catch(() => null)
+      ])
 
-      // Fallback đa dạng như rule số 1 để parse dữ liệu
-      let dataItems: any[] = []
-      if (Array.isArray(res)) dataItems = res
-      else if (res?.data && Array.isArray(res.data)) dataItems = res.data
-      else if (res?.data?.records && Array.isArray(res.data.records)) dataItems = res.data.records
-      else if (res?.data?.items && Array.isArray(res.data.items)) dataItems = res.data.items
-      else if (res?.data?.data && Array.isArray(res.data.data)) dataItems = res.data.data
+      const processRes = (res: any) => {
+        let items: any[] = []
+        if (!res) return items
+        if (Array.isArray(res)) items = res
+        else if (res?.data && Array.isArray(res.data)) items = res.data
+        else if (res?.data?.records && Array.isArray(res.data.records)) items = res.data.records
+        else if (res?.data?.items && Array.isArray(res.data.items)) items = res.data.items
+        else if (res?.data?.data && Array.isArray(res.data.data)) items = res.data.data
+        else if (res?.data?.vouchers && Array.isArray(res.data.vouchers)) items = res.data.vouchers
+        else if (res?.vouchers && Array.isArray(res.vouchers)) items = res.vouchers
+        return items
+      }
 
-      setPromotions(dataItems)
+      const promos = processRes(promoRes)
+      const vouchers = processRes(voucherRes)
+
+      // Gộp chung data
+      setPromotions([...promos, ...vouchers])
     } catch (error) {
       console.error('Lỗi khi tải danh sách ưu đãi:', error)
     } finally {
@@ -50,6 +63,13 @@ export default function ProfilePromotions() {
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
+  }
+
+  // Rút gọn tiền tệ cho ô nhỏ trên stub voucher (VD: 200K, 1.5M)
+  const shortCurrency = (amount: number) => {
+    if (amount >= 1000000) return `${(amount / 1000000).toFixed(amount % 1000000 === 0 ? 0 : 1)}M`
+    if (amount >= 1000) return `${(amount / 1000).toFixed(0)}K`
+    return `${amount}đ`
   }
 
   const calculateRemainingTime = (endDate: string) => {
@@ -70,11 +90,11 @@ export default function ProfilePromotions() {
     const code = voucher.code || voucher.name
     try {
       navigator.clipboard.writeText(code)
-      alert(`Đã sao chép mã giảm giá: ${code}\nChuyển bạn đến trang chủ để mua sắm!`)
-      navigate('/')
+      showToast(`Đã sao chép mã giảm giá: ${code}. Đang chuyển trang...`, 'success')
+      setTimeout(() => navigate('/'), 1500)
     } catch {
-      alert(`Mã giảm giá của bạn là: ${code}\nChuyển bạn đến trang chủ để mua sắm!`)
-      navigate('/')
+      showToast(`Mã giảm giá của bạn là: ${code}. Sử dụng ngay!`, 'success')
+      setTimeout(() => navigate('/'), 1500)
     }
   }
 
@@ -122,29 +142,45 @@ export default function ProfilePromotions() {
                 Mã Giảm Giá & Ưu Đãi
               </h2>
               <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                {vouchers.map((v) => {
-                  const isExpired = new Date(v.end_date).getTime() < new Date().getTime()
+                {vouchers.map((v: any) => {
+                  const endDateStr = v.end_date || v.endDate || v.expiration_date || v.valid_until
+                  const isExpired = endDateStr ? new Date(endDateStr).getTime() < new Date().getTime() : false
+                  const codeToCopy = v.code || v.name || 'VOUCHER'
+                  const discountVal = v.discount_value || v.discount || 10
+                  const rawDiscountType = String(v.discount_type || v.type || 'percent').toLowerCase()
+                  const isPercent = rawDiscountType.includes('percent')
+                  const maxDiscount = v.max_discount_value || v.max_discount
+
                   return (
                     <div
-                      key={v._id}
+                      key={v._id || Math.random().toString()}
                       className={`relative flex rounded-2xl border ${isExpired ? 'border-gray-200 bg-gray-50' : 'border-red-100 bg-red-50/30'} overflow-hidden`}
                     >
                       {/* Left Ticket Stub */}
                       <div
                         className={`w-28 flex flex-col justify-center items-center p-4 border-r border-dashed ${isExpired ? 'bg-gray-200 border-gray-300 text-gray-500' : 'bg-red-500 border-red-200 text-white'}`}
                       >
-                        <span className='text-2xl font-black'>
-                          {v.discount_type === 'percent' ? `${v.discount_value}%` : formatCurrency(v.discount_value)}
+                        <span className='text-2xl font-black leading-tight'>
+                          {isPercent && maxDiscount
+                            ? shortCurrency(maxDiscount)
+                            : isPercent
+                              ? `${Math.min(discountVal, 100)}%`
+                              : shortCurrency(discountVal)}
                         </span>
-                        <span className='text-xs font-medium uppercase tracking-wider mt-1 opacity-80'>Giảm</span>
+                        <span className='text-[10px] font-medium uppercase tracking-wider mt-1 opacity-80'>
+                          {isPercent && maxDiscount ? 'Giảm đến' : 'Giảm'}
+                        </span>
                       </div>
 
                       {/* Right Content */}
                       <div className='flex-1 p-4'>
                         <h3
-                          className={`font-bold text-base mb-1 line-clamp-1 ${isExpired ? 'text-gray-500' : 'text-gray-900'}`}
+                          className={`font-bold text-base mb-1 line-clamp-1 flex justify-between items-center ${isExpired ? 'text-gray-500' : 'text-gray-900'}`}
                         >
-                          {v.name}
+                          {v.name || codeToCopy}
+                          {v.code && (
+                            <span className='text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded'>{v.code}</span>
+                          )}
                         </h3>
                         {v.description && <p className='text-xs text-gray-500 mb-2 line-clamp-2'>{v.description}</p>}
 
@@ -152,10 +188,10 @@ export default function ProfilePromotions() {
                           <CheckCircle2 size={12} className={isExpired ? 'text-gray-400' : 'text-green-500'} />
                           Đơn tối thiểu {v.min_order_value ? formatCurrency(v.min_order_value) : '0 ₫'}
                         </div>
-                        {v.max_discount_value && (
+                        {maxDiscount && (
                           <div className='flex items-center gap-1.5 text-xs text-gray-500 mb-3'>
                             <CheckCircle2 size={12} className={isExpired ? 'text-gray-400' : 'text-green-500'} />
-                            Giảm tối đa {formatCurrency(v.max_discount_value)}
+                            Giảm tối đa {formatCurrency(maxDiscount)}
                           </div>
                         )}
 
@@ -163,7 +199,7 @@ export default function ProfilePromotions() {
                           <span
                             className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${isExpired ? 'bg-gray-200 text-gray-500' : 'bg-red-100 text-red-600'}`}
                           >
-                            <Clock size={12} /> {calculateRemainingTime(v.end_date)}
+                            <Clock size={12} /> {endDateStr ? calculateRemainingTime(endDateStr) : 'Vô thời hạn'}
                           </span>
                           {!isExpired && (
                             <button
