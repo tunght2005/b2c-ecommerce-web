@@ -85,6 +85,23 @@ export default function AIChat() {
   const handleSend = async () => {
     if (!input.trim() || isTyping) return
 
+    // Kiểm tra đăng nhập trước khi gọi API
+    const isLoggedIn = !!localStorage.getItem(TOKEN_KEY)
+    if (!isLoggedIn) {
+      window.dispatchEvent(new CustomEvent('openAuthModal'))
+      // Thêm ngay 1 dòng phản hồi cho user hiểu
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          role: 'ai',
+          content: 'Vui lòng đăng nhập để tiếp tục trò chuyện với tôi nhé!',
+          created_at: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        }
+      ])
+      return
+    }
+
     const userContent = input.trim()
     const newUserMsg: Message = {
       id: Date.now(),
@@ -121,14 +138,28 @@ export default function AIChat() {
         created_at: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
       }
       setMessages((prev) => [...prev, aiMsg])
-    } catch {
-      const errorMsg: Message = {
-        id: Date.now() + 1,
-        role: 'ai',
-        content: 'Đã xảy ra lỗi kết nối. Vui lòng kiểm tra mạng và thử lại nhé!',
-        created_at: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    } catch (err: any) {
+      // Nếu token hết hạn hoặc Backend chủ động trả 401 thì bắn popup
+      if (err?.status === 401 || err?.message?.includes('Unauthorized')) {
+        window.dispatchEvent(new CustomEvent('openAuthModal'))
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            role: 'ai',
+            content: 'Phiên đăng nhập của bạn đã hết. Vui lòng đăng nhập lại để tiếp tục trò chuyện.',
+            created_at: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+          }
+        ])
+      } else {
+        const errorMsg: Message = {
+          id: Date.now() + 1,
+          role: 'ai',
+          content: 'Đã xảy ra lỗi kết nối. Vui lòng kiểm tra mạng và thử lại nhé!',
+          created_at: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        }
+        setMessages((prev) => [...prev, errorMsg])
       }
-      setMessages((prev) => [...prev, errorMsg])
     } finally {
       setIsTyping(false)
     }

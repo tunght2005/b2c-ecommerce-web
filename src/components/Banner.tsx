@@ -1,10 +1,24 @@
 import { useState, useEffect, useRef } from 'react'
+import { fetchClient } from '../api/fetchClient'
+import { resolveImageUrl } from '../api/config'
+
+interface BannerType {
+  _id: string
+  title: string
+  image_url?: string
+  image?: string
+  link?: string
+}
 
 function Banner() {
   const [current, setCurrent] = useState(0)
   const sliderRef = useRef<HTMLDivElement | null>(null)
+  const [apiBanners, setApiBanners] = useState<BannerType[]>([])
 
-  const mainBanners = ['/690x300_open_iPhone 17e.webp', '/690x300_ROI_MacBookNeo.webp', '/oppofingn6.webp']
+  const defaultBanners = ['/690x300_open_iPhone 17e.webp', '/690x300_ROI_MacBookNeo.webp', '/oppofingn6.webp']
+
+  const mainBanners =
+    apiBanners.length > 0 ? apiBanners.map((b) => resolveImageUrl(b.image_url || b.image || '')) : defaultBanners
 
   // LEFT small
   const leftBanners = [
@@ -40,6 +54,27 @@ function Banner() {
     '/banner5.webp',
     '/banner6.webp'
   ]
+
+  useEffect(() => {
+    const loadBanners = async () => {
+      try {
+        const res = await fetchClient<any>('/banners')
+        let data: any[] = []
+        if (Array.isArray(res)) data = res
+        else if (res?.data && Array.isArray(res.data)) data = res.data
+        else if (res?.data?.items && Array.isArray(res.data.items)) data = res.data.items
+        else if (res?.data?.banners && Array.isArray(res.data.banners)) data = res.data.banners
+        else if (res?.banners && Array.isArray(res.banners)) data = res.banners
+
+        // Chỉ lấy những banner đang active (để đề phòng BE trả cả inactive)
+        const activeBanners = data.filter((b: any) => b.is_active !== false)
+        setApiBanners(activeBanners)
+      } catch (err) {
+        console.error('Lỗi khi tải Banner:', err)
+      }
+    }
+    loadBanners()
+  }, [])
 
   useEffect(() => {
     const interval = setInterval(() => {

@@ -14,8 +14,10 @@ import {
   Truck,
   Ticket,
   Tag,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from 'lucide-react'
+import { showToast } from '../components/Toast'
 
 // --- TYPES & MOCK DATA ---
 interface Address {
@@ -45,6 +47,7 @@ interface CartItem {
   quantity: number
   image?: string
   selected?: boolean
+  stock?: number
 }
 
 const initialCartItems: CartItem[] = []
@@ -108,7 +111,8 @@ const Cart = () => {
             price: item.price || 15000000,
             oldPrice: item.oldPrice || 17000000,
             image: item.image || (pId?.image as string) || 'https://via.placeholder.com/150',
-            variant: item.variant || (vId?.sku as string) || 'Tiêu chuẩn'
+            variant: item.variant || (vId?.sku as string) || 'Tiêu chuẩn',
+            stock: (vId?.stock as number) ?? (pId?.stock as number) ?? 100
           }
         })
         setCartItems(processedItems)
@@ -124,6 +128,8 @@ const Cart = () => {
   // States quản lý Popup
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false)
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false)
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false)
+  const [itemsToDelete, setItemsToDelete] = useState<CartItem[]>([])
 
   // Popup tạo địa chỉ
   const [isAddNewAddressOpen, setIsAddNewAddressOpen] = useState(false)
@@ -177,7 +183,7 @@ const Cart = () => {
       !selectedWardCode ||
       !newAddrDetail
     ) {
-      alert('Vui lòng nhập đầy đủ thông tin (Tên, SĐT, Tỉnh, Quận, Phường, Địa chỉ cụ thể)!')
+      showToast('Vui lòng nhập đầy đủ thông tin (Tên, SĐT, Tỉnh, Quận, v.v...)!', 'warning')
       return
     }
     const prov = provinces.find((p) => p.code == selectedProvCode)?.name
@@ -221,9 +227,10 @@ const Cart = () => {
       setSelectedProvCode('')
       setSelectedDistCode('')
       setSelectedWardCode('')
+      showToast('Thêm địa chỉ thành công!', 'success')
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Lỗi Server'
-      alert('Tạo địa chỉ thất bại: ' + msg)
+      showToast('Tạo địa chỉ thất bại: ' + msg, 'error')
     }
   }
 
@@ -256,6 +263,13 @@ const Cart = () => {
     if (!item) return
     const newQuantity = (item.quantity || 1) + delta
     if (newQuantity < 1) return
+
+    // Validate stock
+    const stock = item.stock ?? 100
+    if (newQuantity > stock) {
+      showToast(`Chỉ còn ${stock} mặt hàng trong kho! Không thể thêm quá số lượng.`, 'warning')
+      return
+    }
 
     // Cập nhật UI tức thì (Optimistic Update)
     setCartItems((prev) => prev.map((i) => (i.id === id ? { ...i, quantity: newQuantity } : i)))
@@ -298,23 +312,27 @@ const Cart = () => {
 
       // 3. Bắn event để Header load lại con số badge thực tế
       window.dispatchEvent(new Event('cartChanged'))
+      showToast('Đã xóa sản phẩm khỏi giỏ hàng', 'success')
     } catch (error) {
       console.error('Lỗi xóa sản phẩm:', error)
-      alert('Không thể xóa sản phẩm khỏi giỏ hàng. Vui lòng thử lại!')
+      showToast('Lỗi! Không thể xóa sản phẩm. Vui lòng thử lại!', 'error')
     }
   }
 
-  const handleBulkRemove = async () => {
+  const handleBulkRemove = () => {
     const selectedItemsToRemove = cartItems.filter((i) => i.selected)
     if (selectedItemsToRemove.length === 0) {
-      alert('Vui lòng chọn ít nhất 1 sản phẩm để tiến hành xóa!')
+      showToast('Vui lòng chọn ít nhất 1 sản phẩm để tiến hành xóa!', 'warning')
       return
     }
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa ${selectedItemsToRemove.length} sản phẩm đã chọn khỏi giỏ hàng?`))
-      return
+    setItemsToDelete(selectedItemsToRemove)
+    setShowConfirmDelete(true)
+  }
 
+  const confirmBulkRemove = async () => {
+    setShowConfirmDelete(false)
     let failedCount = 0
-    for (const item of selectedItemsToRemove) {
+    for (const item of itemsToDelete) {
       const pId = (item.product_id as Record<string, unknown>)?._id || item.product_id
       const vId = (item.variant_id as Record<string, unknown>)?._id || item.variant_id || pId
       try {
@@ -322,29 +340,29 @@ const Cart = () => {
           method: 'DELETE',
           body: JSON.stringify({ variant_id: vId })
         })
-      } catch (e) {
+      } catch {
         failedCount++
       }
     }
 
-    const selectedIds = selectedItemsToRemove.map((i) => i.id)
+    const selectedIds = itemsToDelete.map((i) => i.id)
     setCartItems((prev) => prev.filter((i) => !selectedIds.includes(i.id)))
     window.dispatchEvent(new Event('cartChanged'))
 
     if (failedCount > 0) {
-      alert(`Xóa hoàn tất, nhưng có ${failedCount} sản phẩm bị lỗi phía Backend!`)
+      showToast(`Xóa hoàn tất, nhưng có ${failedCount} sản phẩm bị lỗi phía Backend!`, 'warning')
     } else {
-      alert('Đã xóa thành công!')
+      showToast('Đã xóa các sản phẩm thành công!', 'success')
     }
   }
 
   const handleOpenCheckout = () => {
     if (selectedCount === 0) {
-      alert('Vui lòng chọn ít nhất một sản phẩm để thanh toán!')
+      showToast('Vui lòng chọn ít nhất một sản phẩm để thanh toán!', 'warning')
       return
     }
     if (!selectedAddress) {
-      alert('Vui lòng tạo một địa chỉ nhận hàng trước khi thanh toán!')
+      showToast('Vui lòng tạo một địa chỉ nhận hàng để tiếp tục!', 'warning')
       return
     }
     setIsCheckoutModalOpen(true)
@@ -409,7 +427,7 @@ const Cart = () => {
   // --- LOGIC XÁC NHẬN MUA HÀNG (LUỒNG 2 BƯỚC ĐÚNG CHUẨN) ---
   const handleConfirmOrder = async () => {
     if (!selectedAddress) {
-      alert('Bạn chưa chọn Địa chỉ giao hàng!')
+      showToast('Bạn chưa điền Địa chỉ giao hàng!', 'warning')
       return
     }
     if (isSubmittingOrder) return // Tránh bấm nhiều lần
@@ -451,7 +469,7 @@ const Cart = () => {
     } catch (error) {
       console.error('Checkout Failed', error)
       const msg = error instanceof Error ? error.message : 'Lỗi không xác định'
-      alert('Có lỗi xảy ra khi đặt hàng: ' + msg)
+      showToast('Rất tiếc: Có lỗi xảy ra khi đặt hàng! (' + msg + ')', 'error')
     } finally {
       setIsSubmittingOrder(false)
     }
@@ -507,29 +525,6 @@ const Cart = () => {
           <h1 className='text-2xl font-bold text-gray-900 flex items-center gap-3'>
             GIỎ HÀNG <span className='text-gray-500 text-lg font-normal'>({cartItems.length} sản phẩm)</span>
           </h1>
-          <button
-            onClick={async () => {
-              if (!window.confirm('Khách hàng muốn quét dọn các "sản phẩm ma" bị lỗi không thể xóa?')) return
-              try {
-                // Quét 100 sản phẩm mới nhất để ép xóa khỏi giỏ
-                const res: any = await fetchClient('/products?limit=100')
-                const products = res?.data?.items || res?.data || res || []
-                let fixCount = 0
-                for (const p of products) {
-                  try {
-                    await fetchClient('/cart/remove', { method: 'DELETE', body: JSON.stringify({ variant_id: p._id }) })
-                    fixCount++
-                  } catch (e) {}
-                }
-                alert('Đã chạy dọn dẹp lỗi! Vui lòng F5 lại trang.')
-              } catch (e) {
-                alert('Dọn dẹp thất bại.')
-              }
-            }}
-            className='text-xs text-blue-500 hover:text-blue-700 underline'
-          >
-            Fix lỗi không xóa được
-          </button>
         </div>
 
         <div className='flex flex-col lg:flex-row gap-6 items-start'>
@@ -570,9 +565,10 @@ const Cart = () => {
                 </div>
                 <div className='flex-1 min-w-0 sm:pr-4'>
                   <h3 className='text-sm font-medium text-gray-900 line-clamp-2 pr-6'>{item.name}</h3>
-                  <p className='text-xs text-gray-500 mt-1 bg-gray-100 inline-block px-2 py-0.5 rounded'>
-                    {item.variant}
-                  </p>
+                  <div className='flex items-center gap-2 mt-1'>
+                    <p className='text-xs text-gray-500 bg-gray-100 inline-block px-2 py-0.5 rounded'>{item.variant}</p>
+                    {item.stock !== undefined && <p className='text-xs text-red-500 font-medium'>Kho: {item.stock}</p>}
+                  </div>
                   <div className='mt-2 sm:hidden flex items-baseline gap-2'>
                     <span className='text-lg font-bold text-[#E7000B]'>{formatCurrency(item.price)}</span>
                     <span className='text-xs text-gray-400 line-through'>{formatCurrency(item.oldPrice)}</span>
@@ -675,6 +671,42 @@ const Cart = () => {
           </div>
         </div>
       </div>
+
+      {/* --- POPUP XÁC NHẬN XÓA --- */}
+      {showConfirmDelete && (
+        <div
+          className='fixed inset-0 bg-black/60 z-[220] flex items-center justify-center p-4 backdrop-blur-sm'
+          onClick={() => setShowConfirmDelete(false)}
+        >
+          <div
+            className='bg-white rounded-3xl auto shadow-xl w-full max-w-sm p-6 relative flex flex-col text-center'
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className='w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4'>
+              <AlertTriangle size={32} />
+            </div>
+            <h2 className='text-xl font-bold text-gray-900 mb-2'>Xác nhận xóa</h2>
+            <p className='text-gray-600 mb-6'>
+              Bạn có chắc chắn muốn xóa <span className='font-bold'>{itemsToDelete.length}</span> sản phẩm đã chọn khỏi
+              giỏ hàng không? Hành động này không thể hoàn tác.
+            </p>
+            <div className='flex gap-3'>
+              <button
+                onClick={() => setShowConfirmDelete(false)}
+                className='flex-1 py-3 px-4 rounded-xl font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition'
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={confirmBulkRemove}
+                className='flex-1 py-3 px-4 rounded-xl font-semibold bg-red-500 text-white shadow-lg shadow-red-200 hover:bg-red-600 transition'
+              >
+                Xóa ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* --- 1. POPUP THAY ĐỔI ĐỊA CHỈ (GIỮ NGUYÊN) --- */}
       {isAddressModalOpen && (

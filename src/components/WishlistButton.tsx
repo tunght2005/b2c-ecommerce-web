@@ -28,7 +28,7 @@ export default function WishlistButton({
     setLoading(true)
     try {
       await toggleWishlist(productId)
-    } catch (err) {
+    } catch {
       // Error is handled in context
     } finally {
       setLoading(false)

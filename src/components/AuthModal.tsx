@@ -162,6 +162,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialView = 'l
         method: 'POST',
         data: { email, password }
       })
+
+      const userRole = res.user?.role || (res as any).data?.user?.role || 'customer'
+      if (userRole !== 'customer') {
+        throw new Error('Tài khoản của bạn không có quyền truy cập (Chỉ dành cho Khách hàng).')
+      }
+
       localStorage.setItem(TOKEN_KEY, res.accessToken)
       if (res.refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, res.refreshToken)
       localStorage.setItem(USER_INFO_KEY, JSON.stringify(res.user))

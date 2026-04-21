@@ -98,7 +98,7 @@ export default function ProductCard({ product }: { product: Product }) {
         })
       }
       // Trigger cart count update
-      window.dispatchEvent(new Event('cartChange'))
+      window.dispatchEvent(new Event('cartChanged'))
       showToast(`✅ Đã thêm "${product.name}" vào giỏ hàng!`, 'success')
       setAddedFeedback(true)
     } catch (err: any) {
