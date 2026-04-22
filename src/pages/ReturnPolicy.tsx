@@ -1,8 +1,15 @@
 import { Clock, CheckCircle2, AlertCircle, FileText } from 'lucide-react'
+import Seo from '../components/Seo'
 
 export default function ReturnPolicy() {
   return (
     <div className='bg-gray-50 min-h-screen py-8 sm:py-12'>
+      <Seo
+        title='Chính sách đổi trả'
+        description='Xem chính sách đổi trả và hoàn tiền của 7Store cho đơn hàng và sản phẩm lỗi.'
+        keywords='chính sách đổi trả, hoàn tiền, 7Store'
+        canonicalPath='/return-policy'
+      />
       <div className='max-w-4xl mx-auto px-4'>
         <div className='bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-100'>
           <div className='flex items-center gap-4 mb-8'>
@@ -34,7 +41,7 @@ export default function ReturnPolicy() {
                 <li className='flex gap-2'>
                   • Sản phẩm không có dấu hiệu trầy xước, móp méo do tác động ngoại lực từ phía người dùng.
                 </li>
-                <li className='flex gap-2'>• Có hóa đơn mua hàng hoặc thông tin đơn hàng trên hệ thống SevenStore.</li>
+                <li className='flex gap-2'>• Có hóa đơn mua hàng hoặc thông tin đơn hàng trên hệ thống 7Store.</li>
               </ul>
             </section>
 

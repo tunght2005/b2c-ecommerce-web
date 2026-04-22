@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { fetchClient } from '../api/fetchClient'
 import { resolveImageUrl } from '../api/config'
+import Seo from '../components/Seo'
 
 interface Policy {
   _id: string
@@ -317,6 +318,12 @@ export default function ReturnRequest() {
 
   return (
     <div className='bg-gray-50 min-h-screen py-6 sm:py-10'>
+      <Seo
+        title='Yêu cầu trả hàng'
+        description='Gửi yêu cầu trả hàng, hoàn tiền và theo dõi xử lý đơn hàng tại 7Store.'
+        keywords='trả hàng, hoàn tiền, 7Store'
+        canonicalPath={`/orders/${id || ''}/return`}
+      />
       <div className='max-w-2xl mx-auto px-4'>
         {/* Back */}
         <button
@@ -328,7 +335,7 @@ export default function ReturnRequest() {
 
         <div className='bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden'>
           {/* Header */}
-          <div className='bg-gradient-to-r from-red-500 to-red-600 px-6 py-5 text-white'>
+          <div className='bg-linear-to-r from-red-500 to-red-600 px-6 py-5 text-white'>
             <div className='flex items-center gap-3'>
               <PackageX size={28} />
               <div>
@@ -393,7 +400,7 @@ export default function ReturnRequest() {
                         <img
                           src={item.product_image}
                           alt=''
-                          className='w-16 h-16 object-cover rounded-xl flex-shrink-0 bg-gray-100'
+                          className='w-16 h-16 object-cover rounded-xl shrink-0 bg-gray-100'
                         />
                         <div className='flex-1 min-w-0'>
                           <p className='font-semibold text-gray-900 line-clamp-1'>{item.product_name}</p>
@@ -408,7 +415,7 @@ export default function ReturnRequest() {
                           </div>
                         </div>
                         <div
-                          className={`w-5 h-5 rounded-full border-2 flex-shrink-0 ${
+                          className={`w-5 h-5 rounded-full border-2 shrink-0 ${
                             selectedItem?.order_item_id === item.order_item_id
                               ? 'border-red-500 bg-red-500'
                               : 'border-gray-300'
@@ -436,7 +443,7 @@ export default function ReturnRequest() {
                     </h2>
                     {selectedItem.policies.length === 0 ? (
                       <div className='bg-orange-50 border border-orange-200 rounded-2xl p-4 flex items-start gap-3'>
-                        <Info size={18} className='text-orange-500 flex-shrink-0 mt-0.5' />
+                        <Info size={18} className='text-orange-500 shrink-0 mt-0.5' />
                         <p className='text-orange-700 text-sm'>
                           Sản phẩm này chưa có chính sách hoàn trả. Vui lòng liên hệ CSKH để được hỗ trợ.
                         </p>
@@ -461,7 +468,7 @@ export default function ReturnRequest() {
                               </p>
                             </div>
                             <div
-                              className={`w-5 h-5 flex-shrink-0 rounded-full border-2 ${selectedPolicy?._id === pol._id ? 'border-red-500 bg-red-500' : 'border-gray-300'}`}
+                              className={`w-5 h-5 shrink-0 rounded-full border-2 ${selectedPolicy?._id === pol._id ? 'border-red-500 bg-red-500' : 'border-gray-300'}`}
                             >
                               {selectedPolicy?._id === pol._id && (
                                 <div className='w-full h-full flex items-center justify-center'>
@@ -545,7 +552,7 @@ export default function ReturnRequest() {
 
                       {/* Link ảnh minh chứng */}
                       <div>
-                        <label className='block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2'>
+                        <label className='text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2'>
                           <Camera size={14} /> Link ảnh minh chứng (không bắt buộc)
                         </label>
                         <input
@@ -566,7 +573,7 @@ export default function ReturnRequest() {
                 {/* Submit error */}
                 {submitError && (
                   <div className='bg-red-50 text-red-600 p-4 rounded-2xl flex items-start gap-3'>
-                    <X size={16} className='flex-shrink-0 mt-0.5' />
+                    <X size={16} className='shrink-0 mt-0.5' />
                     <p className='text-sm font-medium'>{submitError}</p>
                   </div>
                 )}
