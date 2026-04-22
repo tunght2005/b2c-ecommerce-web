@@ -13,7 +13,8 @@ interface Message {
 interface ChatHistoryItem {
   _id: string
   message: string
-  reply: string
+  response?: string
+  reply?: string
   createdAt?: string
   created_at?: string
 }
@@ -28,7 +29,7 @@ export default function AIChat() {
   const welcomeMsg: Message = {
     id: 1,
     role: 'ai',
-    content: 'Xin chào! Tôi là Trợ lý AI của SevenStore. Bạn cần tìm sản phẩm gì hay cần hỗ trợ gì không?',
+    content: 'Xin chào! Tôi là Trợ lý AI của 7Store. Bạn cần tìm sản phẩm gì hay cần hỗ trợ gì không?',
     created_at: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
   }
 
@@ -69,7 +70,12 @@ export default function AIChat() {
                 minute: '2-digit'
               })
               historyMsgs.push({ id: idx * 2 + 2, role: 'user', content: item.message, created_at: ts })
-              historyMsgs.push({ id: idx * 2 + 3, role: 'ai', content: item.reply, created_at: ts })
+              historyMsgs.push({
+                id: idx * 2 + 3,
+                role: 'ai',
+                content: item.response || item.reply || 'Đã nhận phản hồi.',
+                created_at: ts
+              })
             })
           setMessages([welcomeMsg, ...historyMsgs])
         }
@@ -117,17 +123,17 @@ export default function AIChat() {
     try {
       const res = await fetchClient<any>('/chatbot/message', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userContent })
+        data: { message: userContent }
       })
 
       // Parse response — có thể là { reply: "..." } hoặc { data: { reply: "..." } } hoặc { message: "..." }
       const replyText: string =
+        res?.response ||
+        res?.data?.response ||
         res?.reply ||
         res?.data?.reply ||
         res?.message ||
         res?.data?.message ||
-        res?.response ||
         res?.answer ||
         'Xin lỗi, tôi không thể xử lý yêu cầu này ngay bây giờ. Vui lòng thử lại!'
 
@@ -179,7 +185,7 @@ export default function AIChat() {
       {/* NÚT BONG BÓNG CHAT NỔI Ở GÓC DƯỚI */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 p-4 bg-gradient-to-r from-red-600 to-red-500 text-white rounded-full shadow-2xl hover:scale-110 hover:shadow-red-500/50 transition-all duration-300 z-50 flex items-center justify-center ${
+        className={`fixed bottom-6 right-6 p-4 bg-linear-to-r from-red-600 to-red-500 text-white rounded-full shadow-2xl hover:scale-110 hover:shadow-red-500/50 transition-all duration-300 z-50 flex items-center justify-center ${
           isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'
         }`}
       >
@@ -189,19 +195,19 @@ export default function AIChat() {
 
       {/* CỬA SỔ CHAT AI */}
       <div
-        className={`fixed bottom-6 right-6 w-[350px] sm:w-[400px] h-[550px] max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col z-50 transition-all duration-300 origin-bottom-right ${
+        className={`fixed bottom-6 right-6 w-87.5 sm:w-100 h-137.5 max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col z-50 transition-all duration-300 origin-bottom-right ${
           isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'
         }`}
       >
         {/* Header */}
-        <div className='flex items-center justify-between p-4 bg-gradient-to-r from-red-600 to-red-500 text-white rounded-t-3xl shadow-md'>
+        <div className='flex items-center justify-between p-4 bg-linear-to-r from-red-600 to-red-500 text-white rounded-t-3xl shadow-md'>
           <div className='flex items-center gap-3'>
             <div className='bg-white/20 p-2 rounded-xl backdrop-blur-sm relative'>
               <Bot size={20} />
               <div className='absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 border-2 border-red-500 rounded-full'></div>
             </div>
             <div>
-              <h3 className='font-bold text-sm'>SevenStore AI</h3>
+              <h3 className='font-bold text-sm'>7Store AI</h3>
               <p className='text-[11px] text-red-100'>Luôn sẵn sàng hỗ trợ</p>
             </div>
           </div>
@@ -228,7 +234,7 @@ export default function AIChat() {
             >
               {/* Avatar */}
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-gray-200 text-gray-600' : 'bg-red-100 text-red-600'}`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-gray-200 text-gray-600' : 'bg-red-100 text-red-600'}`}
               >
                 {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
               </div>
