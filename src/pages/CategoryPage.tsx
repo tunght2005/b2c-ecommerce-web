@@ -13,6 +13,7 @@ import {
 import { fetchClient } from '../api/fetchClient'
 import { resolveImageUrl } from '../api/config'
 import ProductCard, { type Product } from '../components/ProductCard'
+import Seo from '../components/Seo'
 
 export default function CategoryPage() {
   const { name } = useParams()
@@ -155,6 +156,12 @@ export default function CategoryPage() {
 
   return (
     <div className='bg-gray-50 min-h-screen py-4 sm:py-6'>
+      <Seo
+        title={`Danh mục ${name && name !== 'all' ? decodeURIComponent(name) : 'Sản phẩm'}`}
+        description={`Khám phá danh sách sản phẩm thuộc danh mục ${name && name !== 'all' ? decodeURIComponent(name) : 'tất cả sản phẩm'} tại 7Store.`}
+        keywords={`${name || 'san pham'}, 7Store, danh mục sản phẩm`}
+        canonicalPath={`/category/${name || 'all'}`}
+      />
       <div className='max-w-7xl mx-auto px-3 sm:px-4'>
         <div className='bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100'>
           <h1 className='text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-gray-900'>
@@ -172,13 +179,13 @@ export default function CategoryPage() {
                     <button
                       key={brand.id}
                       onClick={() => toggleFilter('brand', brand.name.toLowerCase())}
-                      className={`px-3 py-2 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border transition flex items-center justify-center gap-2 flex-grow sm:flex-grow-0 min-w-[calc(33.33%-8px)] sm:min-w-[140px] ${
+                      className={`px-3 py-2 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border transition flex items-center justify-center gap-2 grow sm:grow-0 min-w-[calc(33.33%-8px)] sm:min-w-35 ${
                         isSelected
                           ? 'bg-red-500 text-white border-red-500 shadow-md shadow-red-200'
                           : 'bg-white hover:border-red-400 hover:text-red-500'
                       }`}
                     >
-                      <div className='w-6 h-6 sm:w-8 sm:h-8 bg-white rounded flex-shrink-0 flex items-center justify-center p-0.5 overflow-hidden'>
+                      <div className='w-6 h-6 sm:w-8 sm:h-8 bg-white rounded shrink-0 flex items-center justify-center p-0.5 overflow-hidden'>
                         <img src={brand.logo} alt={brand.name} className='w-full h-full object-contain' />
                       </div>
                       <span className='font-medium text-sm sm:text-base'>{brand.name}</span>
@@ -216,7 +223,7 @@ export default function CategoryPage() {
               <ArrowUpWideNarrow size={14} className='sm:w-4 sm:h-4' /> Giá cao - thấp
             </button>
             <button className='flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-red-500 text-red-500 bg-red-50 whitespace-nowrap text-sm sm:text-base'>
-              <SlidersHorizontal size={14} className='sm:w-[16px] sm:h-[16px]' />
+              <SlidersHorizontal size={14} className='sm:w-4 sm:h-4' />
               Bộ lọc nâng cao
             </button>
           </div>

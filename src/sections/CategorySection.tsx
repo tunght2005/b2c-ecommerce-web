@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import ProductCard, { type Product } from '../components/ProductCard'
 import SkeletonCard from '../components/SkeletonCard'
 import { fetchClient } from '../api/fetchClient'
@@ -12,6 +13,26 @@ type Props = {
 export default function CategorySection({ title, banner }: Props) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+
+  const toCategorySlug = (value: string) => {
+    const normalized = value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+
+    const aliasMap: Record<string, string> = {
+      'dien-thoai': 'dien-thoai',
+      laptop: 'laptop',
+      'dong-ho': 'dong-ho',
+      'phu-kien': 'phu-kien'
+    }
+
+    return aliasMap[normalized] || normalized || 'all'
+  }
 
   useEffect(() => {
     const fetchCategoryProducts = async () => {
@@ -81,9 +102,9 @@ export default function CategorySection({ title, banner }: Props) {
         <div className='lg:col-span-1'>
           <div className='bg-white rounded-3xl overflow-hidden shadow-md h-full border border-gray-200'>
             <img
-              src={banner}
+              src={resolveImageUrl(banner) || banner}
               alt='banner'
-              className='w-full h-full min-h-[500px] object-cover bg-white cursor-pointer hover:opacity-90 transition'
+              className='w-full h-full min-h-125 object-cover bg-white cursor-pointer hover:opacity-90 transition'
             />
           </div>
         </div>
@@ -92,12 +113,9 @@ export default function CategorySection({ title, banner }: Props) {
         <div className='lg:col-span-4 bg-white rounded-3xl shadow-md p-5 flex flex-col'>
           <div className='flex items-center justify-between border-b pb-4 mb-4 font-semibold'>
             <span className='text-gray-700 text-lg uppercase'>{title}</span>
-            <a
-              href={`/category/${encodeURIComponent(title.toLowerCase())}`}
-              className='text-sm text-red-500 hover:underline'
-            >
+            <Link to={`/category/${toCategorySlug(title)}`} className='text-sm text-red-500 hover:underline'>
               Xem tất cả
-            </a>
+            </Link>
           </div>
 
           {loading ? (

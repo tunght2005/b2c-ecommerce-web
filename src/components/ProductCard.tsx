@@ -20,40 +20,41 @@ export type Product = {
   variants?: Record<string, unknown>[]
 }
 
-// Cache chống gọi API 50 lần khi render 50 Card cùng lúc
-let promoPromise: Promise<any> | null = null
-let globalPromo: any = null
-
 // SVG placeholder khi ảnh lỗi
 const FALLBACK_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Crect width='300' height='300' fill='%23f3f4f6'/%3E%3Cg transform='translate(150,130)'%3E%3Ccircle cx='0' cy='-20' r='30' fill='%23d1d5db'/%3E%3Crect x='-50' y='20' width='100' height='60' rx='8' fill='%23d1d5db'/%3E%3C/g%3E%3Ctext x='150' y='240' text-anchor='middle' font-family='sans-serif' font-size='13' fill='%239ca3af'%3EKhông có ảnh%3C/text%3E%3C/svg%3E`
 
 export default function ProductCard({ product }: { product: Product }) {
   const navigate = useNavigate()
-  const [promo, setPromo] = useState<any>(globalPromo)
+  const [promo, setPromo] = useState<any>(null)
   const [imgError, setImgError] = useState(false)
   const [addingCart, setAddingCart] = useState(false)
   const [addedFeedback, setAddedFeedback] = useState(false)
+  const variantId = (product.variants?.[0] as any)?._id || (product.variants?.[0] as any)?.id
+
+  const formatCompactVnd = (value: number) => {
+    if (!Number.isFinite(value)) return ''
+    return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(value) + ' đ'
+  }
 
   useEffect(() => {
-    if (globalPromo) {
-      setPromo(globalPromo)
+    if (!addedFeedback) return
+    const timer = setTimeout(() => setAddedFeedback(false), 1200)
+    return () => clearTimeout(timer)
+  }, [addedFeedback])
+
+  useEffect(() => {
+    if (!variantId) {
+      setPromo(null)
       return
     }
-    if (!promoPromise) {
-      promoPromise = fetchClient('/promotions')
-        .then((res: any) => {
-          const data = res?.data || res
-          if (Array.isArray(data)) {
-            globalPromo = data.find((p: any) => p.status !== 'inactive' || p.active || p.is_active) || null
-          } else {
-            globalPromo = null
-          }
-          return globalPromo
-        })
-        .catch(() => null)
-    }
-    promoPromise.then((p) => setPromo(p))
-  }, [])
+
+    fetchClient(`/promotions/best/${variantId}`)
+      .then((res: any) => {
+        const data = res?.data || res
+        setPromo(data && data._id ? data : null)
+      })
+      .catch(() => setPromo(null))
+  }, [variantId])
 
   // Lấy ảnh thật từ DB, tự động gán domain nếu cần
   const rawImage = product.thumbnail || product.image || product.variants?.[0]?.image
@@ -62,26 +63,51 @@ export default function ProductCard({ product }: { product: Product }) {
   // Lấy giá thật từ DB, hoặc tự sinh giá ảo dựa lắt léo vào chuỗi Tên cho phong phú
   const seedPrice = product.name.length * 1000000 + 5990000
   const rawPrice = (product.price || product.variants?.[0]?.price || seedPrice) as string | number
-  const finalPrice =
-    typeof rawPrice === 'number'
-      ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(rawPrice)
-      : rawPrice
+  const parsedRawPrice = typeof rawPrice === 'number' ? rawPrice : Number(String(rawPrice).replace(/[^\d.-]/g, ''))
+  const basePriceNumber = Number.isFinite(parsedRawPrice) && parsedRawPrice > 0 ? parsedRawPrice : seedPrice
+
+  const promoFinalPrice = typeof promo?.final_price === 'number' ? promo.final_price : Number(promo?.final_price)
+  const promoOriginalPrice =
+    typeof promo?.original_price === 'number' ? promo.original_price : Number(promo?.original_price)
+
+  const displayPriceNumber = Number.isFinite(promoFinalPrice) && promoFinalPrice > 0 ? promoFinalPrice : basePriceNumber
+  const displayOldPriceNumber =
+    Number.isFinite(promoOriginalPrice) && promoOriginalPrice > displayPriceNumber
+      ? promoOriginalPrice
+      : basePriceNumber > displayPriceNumber
+        ? basePriceNumber
+        : 0
+
+  const finalPrice = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(displayPriceNumber)
 
   // Lấy giá Gốc (để gạch ngang)
-  const rawOldPrice = (product.oldPrice ||
-    product.variants?.[0]?.oldPrice ||
-    (typeof rawPrice === 'number' ? rawPrice * 1.15 : null)) as string | number | null
-  const finalOldPrice =
-    rawOldPrice && typeof rawOldPrice === 'number'
-      ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(rawOldPrice)
+  const rawOldPrice = (product.oldPrice || product.variants?.[0]?.oldPrice) as string | number | null
+  const parsedRawOldPrice =
+    typeof rawOldPrice === 'number'
+      ? rawOldPrice
       : rawOldPrice
+        ? Number(String(rawOldPrice).replace(/[^\d.-]/g, ''))
+        : 0
+  const fallbackOldPriceNumber = Number.isFinite(parsedRawOldPrice) && parsedRawOldPrice > 0 ? parsedRawOldPrice : 0
+  const oldPriceToShow = displayOldPriceNumber || fallbackOldPriceNumber
+  const finalOldPrice =
+    oldPriceToShow > displayPriceNumber
+      ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(oldPriceToShow)
+      : null
 
-  // Discount %
-  const finalDiscount =
-    product.discount ||
-    (typeof rawPrice === 'number' && typeof rawOldPrice === 'number' && rawOldPrice > 0
-      ? Math.round(100 - (rawPrice / rawOldPrice) * 100)
-      : 15)
+  const promoType = (promo?.type as string) || ''
+  const promoDiscountType = (promo?.discount_type as string) || ''
+  const promoDiscountValue = Number(promo?.discount_value) || 0
+  const promoBadgeText =
+    promoDiscountType === 'percent'
+      ? `-${promoDiscountValue}%`
+      : promoDiscountValue > 0
+        ? `-${formatCompactVnd(promoDiscountValue)}`
+        : oldPriceToShow > displayPriceNumber
+          ? `-${Math.round(100 - (displayPriceNumber / oldPriceToShow) * 100)}%`
+          : '-0%'
+
+  const promoKindLabel = promoType === 'flash_sale' ? 'FLASH SALE' : promo ? 'NORMAL' : ''
 
   // Quick-add to cart handler
   const handleQuickAdd = async (e: React.MouseEvent) => {
@@ -99,7 +125,7 @@ export default function ProductCard({ product }: { product: Product }) {
       }
       // Trigger cart count update
       window.dispatchEvent(new Event('cartChanged'))
-      showToast(`✅ Đã thêm "${product.name}" vào giỏ hàng!`, 'success')
+      showToast(`Đã thêm "${product.name}" vào giỏ hàng!`, 'success')
       setAddedFeedback(true)
     } catch (err: any) {
       if (err?.status === 401 || err?.message?.includes('Unauthorized')) {
@@ -119,8 +145,10 @@ export default function ProductCard({ product }: { product: Product }) {
       className='group bg-white cursor-pointer rounded-2xl p-3 sm:p-4 shadow-md hover:shadow-2xl hover:-translate-y-1 sm:hover:-translate-y-2 transition duration-300 relative border flex flex-col h-full'
     >
       {/* BADGE (Khuyến mãi) */}
-      <div className='absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-500 text-white text-[10px] sm:text-xs px-2 py-1 rounded-full font-semibold z-10'>
-        -{finalDiscount}%
+      <div
+        className={`absolute top-2 left-2 sm:top-3 sm:left-3 text-white text-[10px] sm:text-xs px-2 py-1 rounded-full font-semibold z-10 ${promoType === 'flash_sale' ? 'bg-orange-500' : 'bg-red-500'}`}
+      >
+        {promoBadgeText}
       </div>
 
       {/* NÚT YÊU THÍCH */}
@@ -138,8 +166,9 @@ export default function ProductCard({ product }: { product: Product }) {
         />
         {/* EVENT BANNER BOTTOM */}
         {promo && (
-          <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-r from-red-600 to-orange-500 text-white text-[9px] sm:text-[10px] font-bold text-center py-1 uppercase tracking-wider z-10 shadow-inner opacity-95'>
+          <div className='absolute bottom-0 left-0 right-0 bg-linear-to-r from-red-600 to-orange-500 text-white text-[9px] sm:text-[10px] font-bold text-center py-1 uppercase tracking-wider z-10 shadow-inner opacity-95'>
             🎁 ƯU ĐÃI {promo.name}
+            {promoKindLabel ? ` • ${promoKindLabel}` : ''}
           </div>
         )}
       </div>
@@ -147,13 +176,13 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* CONTENT */}
       <div className='mt-3 sm:mt-4 flex flex-col flex-1'>
         {/* NAME */}
-        <h3 className='text-xs sm:text-sm font-semibold text-gray-800 line-clamp-2 min-h-[32px] sm:min-h-[40px]'>
+        <h3 className='text-xs sm:text-sm font-semibold text-gray-800 line-clamp-2 min-h-8 sm:min-h-10'>
           {product.name}
         </h3>
 
         {/* RATING */}
         <div className='flex items-center gap-1 mt-1 text-yellow-400 text-sm'>
-          <Star size={12} className='sm:w-[14px] sm:h-[14px]' fill='currentColor' />
+          <Star size={12} className='sm:w-3.5 sm:h-3.5' fill='currentColor' />
           <span className='text-gray-600 text-[10px] sm:text-xs'>{product.rating ?? 4.5}</span>
         </div>
 
@@ -173,7 +202,7 @@ export default function ProductCard({ product }: { product: Product }) {
           className={`mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200
             ${
               addedFeedback
-                ? 'bg-green-500 text-white scale-95'
+                ? 'bg-green-500 text-white scale-95 shadow-lg shadow-green-100'
                 : 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white hover:shadow-md hover:shadow-red-100'
             }
             ${addingCart ? 'opacity-60 cursor-not-allowed' : ''}
