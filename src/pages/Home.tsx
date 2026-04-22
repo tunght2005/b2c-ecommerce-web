@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Banner from '../components/Banner'
 import ScrollTop from '../components/ScrollTop'
 import Footer from '../components/Footer'
+import Seo from '../components/Seo'
 
 import ProductSection from '../sections/ProductSection'
 import CategorySection from '../sections/CategorySection'
@@ -21,6 +22,12 @@ export default function Home() {
 
   return (
     <>
+      <Seo
+        title='Trang chủ'
+        description='7Store - cửa hàng điện thoại, laptop, đồng hồ và phụ kiện chính hãng với ưu đãi cập nhật mỗi ngày.'
+        keywords='7Store, điện thoại, laptop, đồng hồ, phụ kiện, ưu đãi'
+        canonicalPath='/'
+      />
       <Banner />
 
       {/* Sản phẩm nổi bật */}
