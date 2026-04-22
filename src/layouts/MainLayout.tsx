@@ -16,7 +16,7 @@ function MainLayout({ children }: MainLayoutProps) {
       <footer className='bg-gray-900 text-white mt-12 py-10'>
         <div className='max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8'>
           <div>
-            <h3 className='text-3xl font-bold cursor-pointer'>SevenStore</h3>
+            <h3 className='text-3xl font-bold cursor-pointer'>7Store</h3>
             <p className='text-gray-400 mt-3'>Website bán điện thoại, laptop và phụ kiện công nghệ.</p>
           </div>
 

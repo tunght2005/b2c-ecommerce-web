@@ -5,7 +5,7 @@ export default function Footer() {
       <div className='max-w-7xl mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-12'>
         {/* Cột 1 */}
         <div className='text-center sm:text-left'>
-          <h3 className='text-2xl font-bold text-[#E7000B]'>SevenStore</h3>
+          <h3 className='text-2xl font-bold text-[#E7000B]'>7Store</h3>
           <p className='text-gray-400 mt-3 text-sm sm:text-base leading-relaxed'>
             Hệ thống bán lẻ đồ công nghệ, điện thoại, laptop chính hãng uy tín hàng đầu.
           </p>
@@ -39,7 +39,7 @@ export default function Footer() {
 
       {/* Dòng Copyright phía dưới */}
       <div className='max-w-7xl mx-auto px-4 mt-10 pt-6 border-t border-gray-800 text-center text-gray-500 text-sm'>
-        <p>© 2026 SevenStore. All rights reserved.</p>
+        <p>© 2026 7Store. All rights reserved.</p>
       </div>
     </footer>
   )
