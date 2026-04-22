@@ -8,7 +8,13 @@ export const USER_INFO_KEY = 'userInfo'
 // Hàm tiện ích: Tự động gán domain vào đường dẫn ảnh tương đối từ Server
 export const resolveImageUrl = (url: string | undefined | null): string | undefined => {
   if (!url) return undefined
-  if (url.startsWith('http://') || url.startsWith('https://')) return url
-  if (url.startsWith('/')) return `${UPLOADS_BASE_URL}${url}`
-  return url
+  if (url.startsWith('data:')) return url
+
+  const normalized = url.replace(/\\/g, '/')
+
+  if (normalized.startsWith('http://') || normalized.startsWith('https://')) return normalized
+  if (normalized.startsWith('/')) return encodeURI(`${UPLOADS_BASE_URL}${normalized}`)
+
+  // Trường hợp backend trả về dạng "uploads/file.webp" hoặc "images/file.webp"
+  return encodeURI(`${UPLOADS_BASE_URL}/${normalized.replace(/^\.?\/*/, '')}`)
 }

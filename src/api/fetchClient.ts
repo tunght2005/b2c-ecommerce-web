@@ -1,13 +1,79 @@
-import { API_BASE_URL, TOKEN_KEY } from './config'
+import { API_BASE_URL, TOKEN_KEY, REFRESH_TOKEN_KEY, USER_INFO_KEY } from './config'
 
 interface FetchOptions extends RequestInit {
   data?: unknown
 }
 
-export const fetchClient = async <T>(endpoint: string, options: FetchOptions = {}): Promise<T> => {
-  const { data, headers: customHeaders, ...restOptions } = options
+let refreshTokenPromise: Promise<string | null> | null = null
 
-  const token = localStorage.getItem(TOKEN_KEY)
+const clearAuthSession = () => {
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(REFRESH_TOKEN_KEY)
+  localStorage.removeItem(USER_INFO_KEY)
+  window.dispatchEvent(new Event('authChange'))
+}
+
+const parseResponseBody = async (response: Response) => {
+  const contentType = response.headers.get('content-type') || ''
+  if (contentType.includes('application/json')) {
+    return await response.json()
+  }
+  return await response.text()
+}
+
+const shouldSkipRefresh = (endpoint: string) => {
+  return (
+    endpoint.includes('/auth/login') || endpoint.includes('/auth/register') || endpoint.includes('/auth/refresh-token')
+  )
+}
+
+const refreshAccessToken = async (): Promise<string | null> => {
+  if (refreshTokenPromise) return refreshTokenPromise
+
+  refreshTokenPromise = (async () => {
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
+    if (!refreshToken) return null
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ refreshToken })
+      })
+
+      const responseData = await parseResponseBody(response)
+      if (!response.ok) {
+        return null
+      }
+
+      const nextToken =
+        (responseData as Record<string, unknown>)?.accessToken ||
+        ((responseData as Record<string, unknown>)?.data as Record<string, unknown> | undefined)?.accessToken
+
+      if (typeof nextToken === 'string' && nextToken) {
+        localStorage.setItem(TOKEN_KEY, nextToken)
+        window.dispatchEvent(new Event('authChange'))
+        return nextToken
+      }
+
+      return null
+    } catch {
+      return null
+    }
+  })()
+
+  try {
+    return await refreshTokenPromise
+  } finally {
+    refreshTokenPromise = null
+  }
+}
+
+const requestWithToken = async (endpoint: string, options: FetchOptions, tokenOverride?: string | null) => {
+  const { data, headers: customHeaders, ...restOptions } = options
+  const token = tokenOverride ?? localStorage.getItem(TOKEN_KEY)
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -20,26 +86,35 @@ export const fetchClient = async <T>(endpoint: string, options: FetchOptions = {
     headers
   }
 
-  if (data) {
+  if (data !== undefined) {
     config.body = JSON.stringify(data)
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, config)
+  return fetch(`${API_BASE_URL}${endpoint}`, config)
+}
 
-  let responseData
-  const contentType = response.headers.get('content-type')
-  if (contentType && contentType.includes('application/json')) {
-    responseData = await response.json()
-  } else {
-    responseData = await response.text()
+export const fetchClient = async <T>(endpoint: string, options: FetchOptions = {}): Promise<T> => {
+  let response = await requestWithToken(endpoint, options)
+
+  if (response.status === 401 && !shouldSkipRefresh(endpoint)) {
+    const nextAccessToken = await refreshAccessToken()
+
+    if (nextAccessToken) {
+      response = await requestWithToken(endpoint, options, nextAccessToken)
+    } else {
+      clearAuthSession()
+      window.dispatchEvent(new CustomEvent('openAuthModal', { detail: { view: 'login' } }))
+    }
   }
 
+  const responseData = await parseResponseBody(response)
+
   if (!response.ok) {
-    // Nếu lỗi 401 Unauthorized, ở đây mình có thể setup logout logic hoặc bắn event
     if (response.status === 401) {
-      console.error('Unauthorized! Token expired or invalid.')
-      localStorage.removeItem(TOKEN_KEY)
-      window.dispatchEvent(new CustomEvent('openAuthModal')) // Mở popup đăng nhập
+      if (!shouldSkipRefresh(endpoint)) {
+        clearAuthSession()
+        window.dispatchEvent(new CustomEvent('openAuthModal', { detail: { view: 'login' } }))
+      }
     }
 
     const error = new Error(
