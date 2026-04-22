@@ -18,6 +18,7 @@ import {
   AlertTriangle
 } from 'lucide-react'
 import { showToast } from '../components/Toast'
+import Seo from '../components/Seo'
 
 // --- TYPES & MOCK DATA ---
 interface Address {
@@ -97,24 +98,45 @@ const Cart = () => {
           loadedCartItems = rawCart
         }
 
-        // Setup thông số ảo mặc định cho render
-        const processedItems = loadedCartItems.map((item) => {
-          // Ép kiểu an toàn để trích xuất name/image từ product_id và variant_id
-          const pId = item.product_id as Record<string, unknown> | undefined
-          const vId = item.variant_id as Record<string, unknown> | undefined
+        // Setup thông số render + áp giá promotion theo từng variant
+        const processedItems = await Promise.all(
+          loadedCartItems.map(async (item) => {
+            // Ép kiểu an toàn để trích xuất name/image từ variant_id.product_id (nested)
+            const vId = item.variant_id as Record<string, unknown> | undefined
+            const pId = vId?.product_id as Record<string, unknown> | undefined
 
-          return {
-            ...item,
-            id: item._id || item.id || Math.random().toString(),
-            selected: true,
-            name: item.name || (pId?.name as string) || (vId?.name as string) || 'Sản phẩm từ Server',
-            price: item.price || 15000000,
-            oldPrice: item.oldPrice || 17000000,
-            image: item.image || (pId?.image as string) || 'https://via.placeholder.com/150',
-            variant: item.variant || (vId?.sku as string) || 'Tiêu chuẩn',
-            stock: (vId?.stock as number) ?? (pId?.stock as number) ?? 100
-          }
-        })
+            const variantId = (vId?._id as string) || (item.variant_id as string)
+            const basePrice = Number(item.price || (vId?.price as number) || 15000000)
+
+            let finalPrice = basePrice
+            let oldPrice = Number(item.oldPrice || basePrice)
+
+            if (variantId) {
+              try {
+                const promoRes = await fetchClient<Record<string, unknown>>(`/promotions/best/${variantId}`)
+                const promo = (promoRes as any)?.data || promoRes
+                if (promo && typeof promo.final_price === 'number') {
+                  finalPrice = Math.max(0, Number(promo.final_price) || basePrice)
+                  oldPrice = Number(promo.original_price || basePrice)
+                }
+              } catch {
+                // Không có promotion thì giữ giá gốc
+              }
+            }
+
+            return {
+              ...item,
+              id: item._id || item.id || Math.random().toString(),
+              selected: true,
+              name: item.name || (pId?.name as string) || 'Sản phẩm từ Server',
+              price: finalPrice,
+              oldPrice: oldPrice,
+              image: item.image || (pId?.image as string) || 'https://via.placeholder.com/150',
+              variant: item.variant || (vId?.sku as string) || 'Tiêu chuẩn',
+              stock: (vId?.stock as number) ?? 100
+            }
+          })
+        )
         setCartItems(processedItems)
       } catch (error) {
         console.error('Lỗi khi load Checkout Data', error)
@@ -376,7 +398,6 @@ const Cart = () => {
   const totalPrice = selectedItems.reduce((total, item) => total + item.price * item.quantity, 0)
   const totalOldPrice = selectedItems.reduce((total, item) => total + item.oldPrice * item.quantity, 0)
   const productDiscountAmount = totalOldPrice - totalPrice // Giảm giá trực tiếp trên sản phẩm
-  const shippingFee = 30000 // Giả sử phí ship 30k để test FREESHIP
 
   // --- LOGIC ÁP DỤNG VOUCHER THẬT ---
   const handleApplyVoucher = async () => {
@@ -486,8 +507,7 @@ const Cart = () => {
     }
   }
 
-  const finalCheckoutPrice =
-    totalPrice + shippingFee - voucherDiscountAmount > 0 ? totalPrice + shippingFee - voucherDiscountAmount : 0
+  const finalCheckoutPrice = totalPrice - voucherDiscountAmount > 0 ? totalPrice - voucherDiscountAmount : 0
 
   // --- GIAO DIỆN ---
   if (isLoading) {
@@ -520,6 +540,12 @@ const Cart = () => {
 
   return (
     <div className='min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8'>
+      <Seo
+        title='Giỏ hàng'
+        description='Kiểm tra giỏ hàng, áp dụng voucher và thanh toán đơn hàng nhanh chóng tại 7Store.'
+        keywords='giỏ hàng, thanh toán, voucher, 7Store'
+        canonicalPath='/cart'
+      />
       <div className='max-w-7xl mx-auto'>
         <div className='flex items-center justify-between mb-6'>
           <h1 className='text-2xl font-bold text-gray-900 flex items-center gap-3'>
@@ -976,7 +1002,7 @@ const Cart = () => {
                       <p className='font-semibold text-gray-900'>Giao hàng tiêu chuẩn</p>
                       <p className='text-sm text-gray-500 mt-0.5'>Dự kiến giao vào ngày mai</p>
                     </div>
-                    <span className='font-medium text-gray-900'>{formatCurrency(shippingFee)}</span>
+                    <span className='font-medium text-green-600'>FREESHIP</span>
                   </div>
                 </section>
 
@@ -1086,7 +1112,7 @@ const Cart = () => {
                     </div>
                     <div className='flex justify-between'>
                       <span>Phí vận chuyển</span>
-                      <span className='font-medium text-gray-900'>{formatCurrency(shippingFee)}</span>
+                      <span className='font-medium text-green-600 '>FREESHIP</span>
                     </div>
                     {voucherDiscountAmount > 0 && (
                       <div className='flex justify-between text-green-600 font-medium'>
@@ -1113,7 +1139,7 @@ const Cart = () => {
                     {isSubmittingOrder ? 'Đang xử lý thanh toán...' : 'Xác nhận đặt hàng'}
                   </button>
                   <p className='text-center text-xs text-gray-500 mt-3'>
-                    Bằng việc đặt hàng, bạn đồng ý với Điều khoản sử dụng của SevenStore
+                    Bằng việc đặt hàng, bạn đồng ý với Điều khoản sử dụng của 7Store
                   </p>
                 </div>
               </div>

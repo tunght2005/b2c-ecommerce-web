@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Package, Search, ArrowRight, HelpCircle, X, Loader2, Star } from 'lucide-react'
 import ReviewModal from '../components/ReviewModal'
 import { fetchClient } from '../api/fetchClient'
+import Seo from '../components/Seo'
 
 const IMG_FALLBACK =
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'><rect width='400' height='400' fill='%23f3f4f6'/><path d='M160 160c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20zM275 240l-55-70-45 55-25-35-50 70h175z' fill='%23d1d5db'/><text x='50%' y='270' font-family='Arial' font-size='14' font-weight='600' fill='%239ca3af' text-anchor='middle'>Không có ảnh</text></svg>"
@@ -88,6 +89,11 @@ export default function Orders() {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
   }
 
+  const formatOrderCode = (orderId: string) => {
+    const suffix = (orderId || '').slice(-8).toUpperCase()
+    return `SS-${suffix}`
+  }
+
   const renderStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
       pending: 'bg-orange-50 text-orange-600 border-orange-100',
@@ -146,16 +152,22 @@ export default function Orders() {
 
   return (
     <div className='bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 min-h-full'>
+      <Seo
+        title='Đơn mua của tôi'
+        description='Theo dõi toàn bộ đơn hàng, trạng thái vận chuyển và lịch sử mua sắm tại 7Store.'
+        keywords='đơn hàng, mua sắm, 7Store, theo dõi đơn hàng'
+        canonicalPath='/profile/orders'
+      />
       <div className='w-full'>
         {/* Banner Chính sách */}
-        <div className='bg-white rounded-3xl p-4 sm:p-5 mb-6 flex items-center justify-between shadow-sm border border-red-100 bg-gradient-to-r from-white to-red-50'>
+        <div className='bg-white rounded-3xl p-4 sm:p-5 mb-6 flex items-center justify-between shadow-sm border border-red-100 bg-linear-to-r from-white to-red-50'>
           <div className='flex items-center gap-3'>
             <div className='bg-red-500 p-2 rounded-xl text-white'>
               <HelpCircle size={20} />
             </div>
             <div>
               <p className='text-sm font-bold text-gray-900'>Bạn cần hỗ trợ đổi trả hàng?</p>
-              <p className='text-xs text-gray-500'>Tìm hiểu ngay chính sách bảo vệ người mua của SevenStore</p>
+              <p className='text-xs text-gray-500'>Tìm hiểu ngay chính sách bảo vệ người mua của 7Store</p>
             </div>
           </div>
           <button
@@ -174,7 +186,7 @@ export default function Orders() {
             <button
               key={status.key}
               onClick={() => setActiveTab(status.key)}
-              className={`flex-shrink-0 whitespace-nowrap px-6 py-3 text-sm font-bold transition-all relative ${
+              className={`shrink-0 whitespace-nowrap px-6 py-3 text-sm font-bold transition-all relative ${
                 activeTab === status.key ? 'text-red-600' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -207,9 +219,7 @@ export default function Orders() {
                 <div className='px-6 py-4 bg-gray-50 flex flex-wrap justify-between items-center gap-4 border-b border-gray-100'>
                   <div className='flex items-center gap-3'>
                     <Package className='text-red-600' size={20} />
-                    <span className='font-bold text-gray-900 uppercase'>
-                      Mã đơn: Seven-{order._id.substring(order._id.length - 6)}
-                    </span>
+                    <span className='font-bold text-gray-900 uppercase'>Mã đơn: {formatOrderCode(order._id)}</span>
                   </div>
                   {renderStatusBadge(order.status)}
                 </div>
@@ -223,7 +233,7 @@ export default function Orders() {
                           e.currentTarget.src = IMG_FALLBACK
                           e.currentTarget.onerror = null
                         }}
-                        className='w-20 h-20 object-cover rounded-2xl bg-gray-100 flex-shrink-0'
+                        className='w-20 h-20 object-cover rounded-2xl bg-gray-100 shrink-0'
                         alt={item.name || 'Sản phẩm'}
                       />
                       <div className='flex-1'>
@@ -316,7 +326,7 @@ export default function Orders() {
             </button>
 
             <div className='p-6 border-b border-gray-100 flex items-center gap-3 bg-white'>
-              <div className='w-12 h-12 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0'>
+              <div className='w-12 h-12 rounded-full bg-red-50 flex items-center justify-center shrink-0'>
                 <HelpCircle className='text-[#E7000B]' size={26} />
               </div>
               <h3 className='font-bold text-xl text-gray-900'>Lý do hủy đơn</h3>
@@ -324,7 +334,8 @@ export default function Orders() {
 
             <div className='p-6 space-y-3 bg-white'>
               <p className='text-sm text-gray-500 mb-4 pb-2'>
-                Vui lòng chọn lý do hủy đơn hàng #{cancelModal.orderId}. Lưu ý, hành động này không thể hoàn tác.
+                Vui lòng chọn lý do hủy đơn hàng {cancelModal.orderId ? formatOrderCode(cancelModal.orderId) : ''}. Lưu
+                ý, hành động này không thể hoàn tác.
               </p>
 
               {cancelReasonsList.map((reason) => (
@@ -336,7 +347,7 @@ export default function Orders() {
                   }`}
                 >
                   <div
-                    className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                    className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
                       selectedReason === reason ? 'border-[#E7000B]' : 'border-gray-300'
                     }`}
                   >

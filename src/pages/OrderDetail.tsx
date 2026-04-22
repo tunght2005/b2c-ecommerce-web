@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { ArrowLeft, Truck, MapPin, Store, ClipboardList, Loader2, Calendar, CreditCard, History } from 'lucide-react'
 import { fetchClient } from '../api/fetchClient'
+import Seo from '../components/Seo'
 
 interface OrderItem {
   variant_id: any
@@ -49,6 +50,7 @@ function OrderDetail() {
   const navigate = useNavigate()
   const [order, setOrder] = useState<OrderDetailData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isRepaying, setIsRepaying] = useState(false)
 
   useEffect(() => {
     const fetchOrderData = async () => {
@@ -96,6 +98,11 @@ function OrderDetail() {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
   }
 
+  const formatOrderCode = (orderId: string) => {
+    const suffix = (orderId || '').slice(-8).toUpperCase()
+    return `SS-${suffix}`
+  }
+
   // Tự sinh tracking logs dựa trên status hiện tại
   const getTimeline = () => {
     const steps = [
@@ -135,8 +142,42 @@ function OrderDetail() {
       .join(' ')
   }
 
+  const handleRepayVnpay = async () => {
+    if (!order || isRepaying) return
+
+    try {
+      setIsRepaying(true)
+
+      const response = await fetchClient<{ success?: boolean; url?: string; data?: { url?: string } }>(
+        '/payment/create-vnpay',
+        {
+          method: 'POST',
+          body: JSON.stringify({ order_id: order._id })
+        }
+      )
+
+      const paymentUrl = response?.url || response?.data?.url
+      if (!paymentUrl) {
+        throw new Error('Không lấy được link thanh toán VNPAY')
+      }
+
+      window.location.href = paymentUrl
+    } catch (err: unknown) {
+      const error = err as Error
+      alert(error.message || 'Không thể tạo link thanh toán lại. Vui lòng thử lại!')
+    } finally {
+      setIsRepaying(false)
+    }
+  }
+
   return (
     <div className='max-w-7xl mx-auto px-4 py-8 bg-gray-50 min-h-screen'>
+      <Seo
+        title='Chi tiết đơn hàng'
+        description='Xem chi tiết đơn hàng, thanh toán và hành trình vận chuyển tại 7Store.'
+        keywords='chi tiết đơn hàng, thanh toán, 7Store'
+        canonicalPath={`/orders/${id || ''}`}
+      />
       {/* Header */}
       <div className='flex items-center gap-4 mb-8'>
         <button
@@ -147,9 +188,7 @@ function OrderDetail() {
         </button>
         <div>
           <h1 className='text-2xl sm:text-3xl font-bold text-gray-900'>Chi tiết đơn hàng</h1>
-          <p className='text-sm text-gray-500 font-medium mt-1'>
-            SevenStore • Mã đơn: #{order._id.substring(order._id.length - 8).toUpperCase()}
-          </p>
+          <p className='text-sm text-gray-500 font-medium mt-1'>7Store • Mã đơn: {formatOrderCode(order._id)}</p>
         </div>
       </div>
 
@@ -188,7 +227,7 @@ function OrderDetail() {
               Hành trình đơn hàng
             </h3>
             <div className='relative pl-6 space-y-10'>
-              <div className='absolute top-2 bottom-2 left-[33px] w-0.5 bg-gray-50 z-0' />
+              <div className='absolute top-2 bottom-2 left-8.25 w-0.5 bg-gray-50 z-0' />
               {getTimeline().map((step, idx) => (
                 <div key={idx} className={`relative z-10 flex gap-8 items-start ${!step.isDone ? 'opacity-30' : ''}`}>
                   <div
@@ -232,13 +271,13 @@ function OrderDetail() {
                   item.name ||
                   vInfo?.name ||
                   (vInfo?.sku ? skuToDisplayName(vInfo.sku) : null) ||
-                  'Sản phẩm điện tử SevenStore'
+                  'Sản phẩm điện tử 7Store'
                 return (
                   <div
                     key={index}
                     className='flex items-center gap-6 p-5 sm:p-6 bg-white rounded-3xl border border-gray-100 hover:border-gray-200 hover:shadow-sm transition'
                   >
-                    <div className='relative flex-shrink-0'>
+                    <div className='relative shrink-0'>
                       <img
                         src={item.image || 'https://via.placeholder.com/300x300?text=7Store'}
                         alt={displayName}
@@ -358,8 +397,17 @@ function OrderDetail() {
               </button>
             )}
             {order.payment_status !== 'paid' && order.status === 'pending' && (
-              <button className='w-full py-4 bg-red-600 text-white rounded-2xl font-bold shadow-xl shadow-red-100 hover:bg-red-700 transition'>
-                Thanh toán lại (VNPAY)
+              <button
+                onClick={handleRepayVnpay}
+                disabled={isRepaying}
+                className={`w-full py-4 rounded-2xl font-bold shadow-xl transition flex items-center justify-center gap-2 ${
+                  isRepaying
+                    ? 'bg-gray-300 text-gray-600 cursor-not-allowed shadow-none'
+                    : 'bg-red-600 text-white shadow-red-100 hover:bg-red-700'
+                }`}
+              >
+                {isRepaying && <Loader2 size={18} className='animate-spin' />}
+                {isRepaying ? 'Đang tạo link thanh toán...' : 'Thanh toán lại (VNPAY)'}
               </button>
             )}
             <button

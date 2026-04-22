@@ -1,9 +1,17 @@
+import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { CheckCircle2, FileText, ChevronLeft } from 'lucide-react'
+import { CheckCircle2, ChevronLeft } from 'lucide-react'
 
 export default function CancelSuccess() {
   const { id } = useParams()
   const navigate = useNavigate()
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigate(`/orders/${id}`, { replace: true })
+    }, 1500)
+
+    return () => clearTimeout(timer)
+  }, [id, navigate])
 
   return (
     <div className='bg-gray-50 min-h-screen flex flex-col'>
@@ -26,25 +34,12 @@ export default function CancelSuccess() {
         </h2>
 
         <p className='text-gray-500 text-center max-w-sm mb-8 text-sm sm:text-base leading-relaxed'>
-          SevenStore đang xử lý yêu cầu hủy đơn hàng #{id} của bạn. Nếu bạn đã thanh toán trước, hệ thống sẽ tự động
-          hoàn tiền trong vòng 1-3 ngày làm việc.
+          <b className='text-red-600 text-xl'>7Store</b> đang xử lý yêu cầu hủy đơn hàng #{id} của bạn. <br /> Nếu bạn
+          đã thanh toán trước, hệ thống sẽ tự động hoàn tiền trong vòng 1-3 ngày làm việc.
         </p>
 
-        <div className='w-full max-w-sm space-y-3'>
-          <button
-            onClick={() => navigate(`/orders/${id}`)}
-            className='w-full flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-3.5 rounded-2xl hover:bg-red-700 transition shadow-lg shadow-red-100'
-          >
-            <FileText size={20} />
-            Xem chi tiết đơn hàng
-          </button>
-
-          <button
-            onClick={() => navigate('/orders')}
-            className='w-full font-bold text-gray-600 py-3.5 rounded-2xl hover:bg-gray-100 transition'
-          >
-            Quay lại danh sách đơn
-          </button>
+        <div className='flex flex-col sm:flex-row gap-4 justify-center'>
+          <p className='text-gray-600 font-semibold text-lg'>Đang về...</p>
         </div>
       </div>
     </div>
