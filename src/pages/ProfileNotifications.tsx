@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Bell, Clock, CheckCheck, Loader2, Info, Package, Tag } from 'lucide-react'
 import { fetchClient } from '../api/fetchClient'
+import Seo from '../components/Seo'
 
 interface Notification {
   _id: string
@@ -89,6 +90,12 @@ export default function ProfileNotifications() {
 
   return (
     <div className='bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 min-h-full'>
+      <Seo
+        title='Thông báo của tôi'
+        description='Xem và quản lý toàn bộ thông báo đơn hàng, ưu đãi và hệ thống tại 7Store.'
+        keywords='thông báo, đơn hàng, ưu đãi, 7Store'
+        canonicalPath='/profile/notifications'
+      />
       <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8'>
         <div>
           <h1 className='text-2xl sm:text-3xl font-bold text-gray-900'>Thông báo của tôi</h1>
@@ -173,11 +180,11 @@ export default function ProfileNotifications() {
         )}
       </div>
 
-      <div className='mt-8 p-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl text-white overflow-hidden relative'>
+      <div className='mt-8 p-6 bg-linear-to-br from-gray-900 to-gray-800 rounded-3xl text-white overflow-hidden relative'>
         <div className='relative z-10'>
           <h4 className='font-bold text-lg mb-1'>Mẹo nhỏ!</h4>
           <p className='text-gray-300 text-sm opacity-90'>
-            Bật thông báo trên trình duyệt để không bỏ lỡ các đợt Flash Sale cực sốc từ SevenStore.
+            Bật thông báo trên trình duyệt để không bỏ lỡ các đợt Flash Sale cực sốc từ 7Store.
           </p>
         </div>
         <Bell className='absolute -bottom-4 -right-4 text-white/5' size={120} />

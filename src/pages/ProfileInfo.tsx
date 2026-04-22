@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { User, Mail, Phone, ShieldCheck, Lock, Eye, EyeOff, X, CheckCircle } from 'lucide-react'
 import { fetchClient } from '../api/fetchClient'
+import Seo from '../components/Seo'
 
 interface UserProfile {
   username?: string
@@ -134,7 +135,7 @@ export default function ProfileInfo() {
 
   if (isLoading) {
     return (
-      <div className='bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex items-center justify-center min-h-[300px]'>
+      <div className='bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex items-center justify-center min-h-75'>
         <p className='text-gray-400 animate-pulse font-medium'>Đang tải hồ sơ...</p>
       </div>
     )
@@ -142,6 +143,12 @@ export default function ProfileInfo() {
 
   return (
     <div className='bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100'>
+      <Seo
+        title='Hồ sơ cá nhân'
+        description='Quản lý thông tin cá nhân và bảo mật tài khoản 7Store.'
+        keywords='hồ sơ cá nhân, tài khoản, 7Store'
+        canonicalPath='/profile'
+      />
       <div className='flex justify-between items-center mb-8 border-b border-gray-100 pb-6'>
         <div>
           <h1 className='text-2xl font-bold text-gray-900 flex items-center gap-2'>
@@ -229,7 +236,7 @@ export default function ProfileInfo() {
       {/* ========== MODAL ĐỔI MẬT KHẨU ========== */}
       {isPwModalOpen && (
         <div
-          className='fixed inset-0 bg-black/50 backdrop-blur-sm z-[300] flex items-center justify-center p-4'
+          className='fixed inset-0 bg-black/50 backdrop-blur-sm z-300 flex items-center justify-center p-4'
           onClick={() => setIsPwModalOpen(false)}
         >
           <div

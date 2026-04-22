@@ -105,7 +105,7 @@ function Field({
       </div>
       {hasError && (
         <p className='mt-1 text-xs text-red-500 flex items-center gap-1'>
-          <AlertCircle size={11} className='flex-shrink-0' />
+          <AlertCircle size={11} className='shrink-0' />
           {error}
         </p>
       )}
@@ -211,8 +211,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialView = 'l
   if (!isOpen) return null
 
   return (
-    <div className='fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4'>
-      <div className='bg-white text-gray-900 rounded-2xl shadow-2xl w-full max-w-[800px] flex overflow-hidden relative'>
+    <div className='fixed inset-0 z-100 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4'>
+      <div className='bg-white text-gray-900 rounded-2xl shadow-2xl w-full max-w-200 flex overflow-hidden relative'>
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -222,7 +222,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialView = 'l
         </button>
 
         {/* LEFT COLUMN: FORM */}
-        <div className='w-full md:w-[500px] p-6 sm:p-10 flex flex-col justify-center min-h-[500px] relative overflow-y-auto max-h-[90vh]'>
+        <div className='w-full md:w-125 p-6 sm:p-10 flex flex-col justify-center min-h-125 relative overflow-y-auto max-h-[90vh]'>
           <h2 className='text-3xl font-medium mb-1'>{view === 'login' ? 'Xin chào,' : 'Tạo tài khoản,'}</h2>
           <p className='text-sm text-gray-600 mb-8'>
             {view === 'login' ? 'Đăng nhập hoặc Tạo tài khoản' : 'Nhập thông tin bên dưới để đăng ký'}
@@ -378,7 +378,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialView = 'l
                   id='terms'
                   type='checkbox'
                   required
-                  className='mt-0.5 h-4 w-4 text-[#E7000B] focus:ring-[#E7000B] border-gray-300 rounded cursor-pointer flex-shrink-0'
+                  className='mt-0.5 h-4 w-4 text-[#E7000B] focus:ring-[#E7000B] border-gray-300 rounded cursor-pointer shrink-0'
                 />
                 <label htmlFor='terms' className='text-sm text-gray-600 cursor-pointer leading-snug'>
                   Tôi đồng ý với{' '}
@@ -414,13 +414,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialView = 'l
         </div>
 
         {/* RIGHT COLUMN: BRANDING (TIKI STYLE) */}
-        <div className='hidden md:flex md:w-[300px] flex-col items-center justify-center p-8 text-center bg-gradient-to-b from-red-50 to-red-100/30'>
+        <div className='hidden md:flex md:w-75 flex-col items-center justify-center p-8 text-center bg-linear-to-b from-red-50 to-red-100/30'>
           <div className='w-48 h-48 mb-6 relative'>
             {/* Vòng sáng quanh logo */}
             <div className='absolute inset-0 bg-red-100 rounded-full mix-blend-multiply filter blur-2xl animate-pulse opacity-60'></div>
-            <img src='/logo.svg' alt='SevenStore' className='w-full h-full object-contain relative z-10' />
+            <img src='/logo.svg' alt='7Store' className='w-full h-full object-contain relative z-10' />
           </div>
-          <h3 className='text-red-600 font-medium text-xl mb-2 mt-4'>Mua sắm tại SevenStore</h3>
+          <h3 className='text-red-600 font-medium text-xl mb-2 mt-4'>Mua sắm tại 7Store</h3>
           <p className='text-red-500 text-sm'>Siêu ưu đãi mỗi ngày</p>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { MapPin, Plus, Trash2, Star } from 'lucide-react'
 import { fetchClient } from '../api/fetchClient'
 import { USER_INFO_KEY } from '../api/config'
+import Seo from '../components/Seo'
 
 interface Address {
   _id?: string
@@ -159,6 +160,12 @@ export default function ProfileAddresses() {
 
   return (
     <div className='bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100'>
+      <Seo
+        title='Địa chỉ nhận hàng'
+        description='Quản lý danh sách địa chỉ giao hàng để thanh toán và nhận hàng nhanh hơn tại 7Store.'
+        keywords='địa chỉ nhận hàng, giao hàng, 7Store'
+        canonicalPath='/profile/addresses'
+      />
       <div className='flex justify-between items-center mb-8 border-b border-gray-100 pb-6'>
         <div>
           <h1 className='text-2xl font-bold text-gray-900 flex items-center gap-2'>
@@ -213,7 +220,7 @@ export default function ProfileAddresses() {
                   </div>
                   <p className='text-gray-500'>{`${addr.detail}, ${addr.ward}, ${addr.district}, ${addr.province}`}</p>
                 </div>
-                <div className='flex gap-2 flex-shrink-0'>
+                <div className='flex gap-2 shrink-0'>
                   {!addr.is_default && (
                     <button
                       onClick={() => handleSetDefault(id)}
@@ -239,7 +246,7 @@ export default function ProfileAddresses() {
       {/* Modal Thêm Địa Chỉ */}
       {isFormOpen && (
         <div
-          className='fixed inset-0 bg-black/50 backdrop-blur-sm z-[300] flex items-center justify-center p-4'
+          className='fixed inset-0 bg-black/50 backdrop-blur-sm z-300 flex items-center justify-center p-4'
           onClick={() => setIsFormOpen(false)}
         >
           <div

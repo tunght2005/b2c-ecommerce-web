@@ -21,9 +21,7 @@ import { showToast } from '../components/Toast'
 export default function ProfileLayout() {
   const navigate = useNavigate()
   const [displayName, setDisplayName] = useState('Người dùng')
-  const [avatar, setAvatar] = useState(
-    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300'
-  )
+  const [avatar, setAvatar] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
 
   useEffect(() => {
@@ -33,10 +31,12 @@ export default function ProfileLayout() {
         try {
           const info = JSON.parse(raw)
           setDisplayName(info.username || info.email || 'Người dùng')
-          if (info.avatar) setAvatar(info.avatar)
+          setAvatar(info.avatar || null)
         } catch {
           /* skip */
         }
+      } else {
+        setAvatar(null)
       }
     }
 
@@ -119,7 +119,7 @@ export default function ProfileLayout() {
     <div className='min-h-screen bg-gray-50 py-10'>
       <div className='max-w-7xl mx-auto px-4 flex flex-col md:flex-row gap-8'>
         {/* SIDEBAR */}
-        <div className='w-full md:w-64 flex-shrink-0'>
+        <div className='w-full md:w-64 shrink-0'>
           <div className='bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center mb-6 relative'>
             <label className='relative group cursor-pointer mb-4 block'>
               <input
@@ -132,7 +132,13 @@ export default function ProfileLayout() {
               <div
                 className={`w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg ${isUploading ? 'opacity-50' : ''}`}
               >
-                <img src={avatar} alt='Avatar' className='w-full h-full object-cover' />
+                {avatar ? (
+                  <img src={avatar} alt='Avatar' className='w-full h-full object-cover' />
+                ) : (
+                  <div className='w-full h-full bg-gray-100 flex items-center justify-center text-gray-400'>
+                    <User size={42} />
+                  </div>
+                )}
               </div>
               <div className='absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full'>
                 {isUploading ? (
