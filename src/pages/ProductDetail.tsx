@@ -463,203 +463,6 @@ export default function ProductDetail() {
                 </div>
               )}
             </div>
-
-            {/* ==== SECTION ĐÁNH GIÁ KHÁCH HÀNG ==== */}
-            <div className='bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100'>
-              <div className='flex items-center justify-between mb-5'>
-                <div className='flex items-center gap-2'>
-                  <MessageSquare className='text-red-500' size={20} />
-                  <h3 className='text-lg sm:text-xl font-bold'>Đánh giá khách hàng</h3>
-                </div>
-                {reviewsMeta.total > 0 && <span className='text-sm text-gray-400'>{reviewsMeta.total} đánh giá</span>}
-              </div>
-
-              {/* Tổng quan sao */}
-              {reviewsMeta.total > 0 && (
-                <div className='flex items-center gap-5 p-4 bg-linear-to-r from-yellow-50 to-orange-50 rounded-2xl border border-yellow-100 mb-5'>
-                  <div className='text-center shrink-0'>
-                    <div className='text-4xl font-black text-yellow-500'>
-                      {reviewsMeta.avgRating > 0 ? reviewsMeta.avgRating.toFixed(1) : '—'}
-                    </div>
-                    <div className='flex gap-0.5 mt-1 justify-center'>
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star
-                          key={s}
-                          size={14}
-                          className={s <= Math.round(reviewsMeta.avgRating) ? 'text-yellow-400' : 'text-gray-200'}
-                          fill={s <= Math.round(reviewsMeta.avgRating) ? 'currentColor' : 'none'}
-                        />
-                      ))}
-                    </div>
-                    <div className='text-xs text-gray-500 mt-1'>{reviewsMeta.total} đánh giá</div>
-                  </div>
-                  <div className='flex-1 space-y-1.5'>
-                    {[5, 4, 3, 2, 1].map((star) => {
-                      const count = reviews.filter((r) => r.rating === star).length
-                      const pct = reviewsMeta.total > 0 ? (count / reviewsMeta.total) * 100 : 0
-                      return (
-                        <div key={star} className='flex items-center gap-2 text-xs'>
-                          <span className='w-3 text-gray-600 font-semibold'>{star}</span>
-                          <Star size={11} className='text-yellow-400' fill='currentColor' />
-                          <div className='flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden'>
-                            <div
-                              className='h-full bg-yellow-400 rounded-full transition-all'
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                          <span className='w-5 text-gray-400 text-right'>{count}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Danh sách reviews */}
-              {reviewsLoading ? (
-                <div className='flex flex-col items-center py-10 gap-3'>
-                  <Loader2 className='animate-spin text-red-400' size={32} />
-                  <p className='text-sm text-gray-400'>Đang tải đánh giá...</p>
-                </div>
-              ) : reviews.length === 0 ? (
-                <div className='text-center py-10'>
-                  <Star className='mx-auto text-gray-200 mb-3' size={40} />
-                  <p className='text-gray-400 text-sm'>Chưa có đánh giá nào cho sản phẩm này.</p>
-                  <p className='text-gray-300 text-xs mt-1'>Hãy là người đầu tiên chia sẻ trải nghiệm!</p>
-                </div>
-              ) : (
-                <div className='space-y-4'>
-                  {reviews.map((review, idx) => {
-                    let avatarUrl = review.user?.avatar || review.user_id?.avatar || review.avatar
-                    // Nếu là review của local user hiện tại nhưng backend chưa trả avatar mới nhất
-                    try {
-                      const userInfo = JSON.parse(localStorage.getItem('userInfo') || 'null')
-                      if (userInfo && userInfo.avatar) {
-                        const reviewAuthorId = review.user?._id || review.user_id?._id || review.user_id || review.user
-                        if (reviewAuthorId === userInfo._id || reviewAuthorId === userInfo.id) {
-                          avatarUrl = userInfo.avatar
-                        }
-                      }
-                      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    } catch (e) {
-                      // skip
-                    }
-
-                    return (
-                      <div
-                        key={review._id || idx}
-                        className='border border-gray-100 rounded-2xl p-4 hover:bg-gray-50/50 transition'
-                      >
-                        <div className='flex items-start justify-between gap-3'>
-                          <div className='flex items-center gap-3'>
-                            {avatarUrl ? (
-                              <img src={avatarUrl} className='w-9 h-9 rounded-full object-cover shadow-sm' alt='' />
-                            ) : (
-                              <div className='w-9 h-9 rounded-full bg-linear-to-br from-red-400 to-orange-400 flex items-center justify-center'>
-                                <UserCircle2 size={20} className='text-white' />
-                              </div>
-                            )}
-                            <div>
-                              <p className='text-sm font-bold text-gray-800'>
-                                {review.user?.username ||
-                                  review.user?.name ||
-                                  review.user?.full_name ||
-                                  review.user_id?.username ||
-                                  review.user_id?.name ||
-                                  review.user_name ||
-                                  review.author ||
-                                  (typeof review.user === 'string' || typeof review.user_id === 'string'
-                                    ? '(ID Khách hàng)'
-                                    : 'Người dùng ẩn danh')}
-                              </p>
-                              <p className='text-xs text-gray-400'>
-                                {new Date(review.createdAt).toLocaleDateString('vi-VN')}
-                              </p>
-                            </div>
-                          </div>
-                          <div className='flex gap-0.5 shrink-0'>
-                            {[1, 2, 3, 4, 5].map((s) => (
-                              <Star
-                                key={s}
-                                size={13}
-                                className={s <= review.rating ? 'text-yellow-400' : 'text-gray-200'}
-                                fill={s <= review.rating ? 'currentColor' : 'none'}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        <p className='text-sm text-gray-700 mt-3 leading-relaxed whitespace-pre-wrap'>
-                          {review.content}
-                        </p>
-
-                        {/* Ảnh đính kèm */}
-                        {review.images && review.images.length > 0 && (
-                          <div className='flex gap-2 mt-3 flex-wrap'>
-                            {review.images.map((img: string, i: number) => (
-                              <img
-                                key={i}
-                                src={img}
-                                className='w-16 h-16 object-cover rounded-xl border border-gray-100'
-                                alt=''
-                              />
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Vote Hữu ích */}
-                        <div className='mt-4 flex items-center gap-4'>
-                          <button
-                            onClick={() => !review.has_voted && handleVoteHelpful(review._id)}
-                            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition ${review.has_voted ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
-                          >
-                            <ThumbsUp size={14} className={review.has_voted ? 'fill-current' : ''} />
-                            Hữu ích {review.helpful_count > 0 ? `(${review.helpful_count})` : ''}
-                          </button>
-                        </div>
-
-                        {/* Admin Reply */}
-                        {(review.reply || review.admin_reply) && (
-                          <div className='mt-4 bg-gray-50 p-4 rounded-xl border border-gray-100 relative ml-4'>
-                            <div className='absolute -top-2 left-6 w-4 h-4 bg-gray-50 border-t border-l border-gray-100 rotate-45'></div>
-                            <p className='text-xs font-bold text-gray-800 mb-1 flex items-center gap-2'>
-                              <BadgeCheck size={14} className='text-blue-500' />
-                              Phản hồi từ Admin Support
-                            </p>
-                            <p className='text-sm text-gray-600 leading-relaxed'>
-                              {typeof (review.reply || review.admin_reply) === 'string'
-                                ? review.reply || review.admin_reply
-                                : review.reply?.content ||
-                                  review.admin_reply?.content ||
-                                  'Cảm ơn bạn đã đánh giá sản phẩm!'}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-
-                  {/* Load thêm */}
-                  {reviewsPage < reviewsMeta.totalPages && (
-                    <button
-                      onClick={handleLoadMoreReviews}
-                      disabled={reviewsLoadingMore}
-                      className='w-full py-3 rounded-2xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition flex items-center justify-center gap-2'
-                    >
-                      {reviewsLoadingMore ? (
-                        <>
-                          <Loader2 size={16} className='animate-spin' /> Đang tải...
-                        </>
-                      ) : (
-                        <>
-                          <ChevronDown size={16} /> Xem thêm đánh giá
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-            {/* ==== END REVIEWS ==== */}
           </div>
 
           {/* CỘT PHẢI (Mua hàng, Chính sách) */}
@@ -807,6 +610,201 @@ export default function ProductDetail() {
               </div>
             </div>
           </div>
+
+          {/* ==== SECTION ĐÁNH GIÁ KHÁCH HÀNG ==== */}
+          <div className='bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 lg:col-start-1'>
+            <div className='flex items-center justify-between mb-5'>
+              <div className='flex items-center gap-2'>
+                <MessageSquare className='text-red-500' size={20} />
+                <h3 className='text-lg sm:text-xl font-bold'>Đánh giá khách hàng</h3>
+              </div>
+              {reviewsMeta.total > 0 && <span className='text-sm text-gray-400'>{reviewsMeta.total} đánh giá</span>}
+            </div>
+
+            {/* Tổng quan sao */}
+            {reviewsMeta.total > 0 && (
+              <div className='flex items-center gap-5 p-4 bg-linear-to-r from-yellow-50 to-orange-50 rounded-2xl border border-yellow-100 mb-5'>
+                <div className='text-center shrink-0'>
+                  <div className='text-4xl font-black text-yellow-500'>
+                    {reviewsMeta.avgRating > 0 ? reviewsMeta.avgRating.toFixed(1) : '—'}
+                  </div>
+                  <div className='flex gap-0.5 mt-1 justify-center'>
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star
+                        key={s}
+                        size={14}
+                        className={s <= Math.round(reviewsMeta.avgRating) ? 'text-yellow-400' : 'text-gray-200'}
+                        fill={s <= Math.round(reviewsMeta.avgRating) ? 'currentColor' : 'none'}
+                      />
+                    ))}
+                  </div>
+                  <div className='text-xs text-gray-500 mt-1'>{reviewsMeta.total} đánh giá</div>
+                </div>
+                <div className='flex-1 space-y-1.5'>
+                  {[5, 4, 3, 2, 1].map((star) => {
+                    const count = reviews.filter((r) => r.rating === star).length
+                    const pct = reviewsMeta.total > 0 ? (count / reviewsMeta.total) * 100 : 0
+                    return (
+                      <div key={star} className='flex items-center gap-2 text-xs'>
+                        <span className='w-3 text-gray-600 font-semibold'>{star}</span>
+                        <Star size={11} className='text-yellow-400' fill='currentColor' />
+                        <div className='flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden'>
+                          <div
+                            className='h-full bg-yellow-400 rounded-full transition-all'
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className='w-5 text-gray-400 text-right'>{count}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Danh sách reviews */}
+            {reviewsLoading ? (
+              <div className='flex flex-col items-center py-10 gap-3'>
+                <Loader2 className='animate-spin text-red-400' size={32} />
+                <p className='text-sm text-gray-400'>Đang tải đánh giá...</p>
+              </div>
+            ) : reviews.length === 0 ? (
+              <div className='text-center py-10'>
+                <Star className='mx-auto text-gray-200 mb-3' size={40} />
+                <p className='text-gray-400 text-sm'>Chưa có đánh giá nào cho sản phẩm này.</p>
+                <p className='text-gray-300 text-xs mt-1'>Hãy là người đầu tiên chia sẻ trải nghiệm!</p>
+              </div>
+            ) : (
+              <div className='space-y-4'>
+                {reviews.map((review, idx) => {
+                  let avatarUrl = review.user?.avatar || review.user_id?.avatar || review.avatar
+                  // Nếu là review của local user hiện tại nhưng backend chưa trả avatar mới nhất
+                  try {
+                    const userInfo = JSON.parse(localStorage.getItem('userInfo') || 'null')
+                    if (userInfo && userInfo.avatar) {
+                      const reviewAuthorId = review.user?._id || review.user_id?._id || review.user_id || review.user
+                      if (reviewAuthorId === userInfo._id || reviewAuthorId === userInfo.id) {
+                        avatarUrl = userInfo.avatar
+                      }
+                    }
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                  } catch (e) {
+                    // skip
+                  }
+
+                  return (
+                    <div
+                      key={review._id || idx}
+                      className='border border-gray-100 rounded-2xl p-4 hover:bg-gray-50/50 transition'
+                    >
+                      <div className='flex items-start justify-between gap-3'>
+                        <div className='flex items-center gap-3'>
+                          {avatarUrl ? (
+                            <img src={avatarUrl} className='w-9 h-9 rounded-full object-cover shadow-sm' alt='' />
+                          ) : (
+                            <div className='w-9 h-9 rounded-full bg-linear-to-br from-red-400 to-orange-400 flex items-center justify-center'>
+                              <UserCircle2 size={20} className='text-white' />
+                            </div>
+                          )}
+                          <div>
+                            <p className='text-sm font-bold text-gray-800'>
+                              {review.user?.username ||
+                                review.user?.name ||
+                                review.user?.full_name ||
+                                review.user_id?.username ||
+                                review.user_id?.name ||
+                                review.user_name ||
+                                review.author ||
+                                (typeof review.user === 'string' || typeof review.user_id === 'string'
+                                  ? '(ID Khách hàng)'
+                                  : 'Người dùng ẩn danh')}
+                            </p>
+                            <p className='text-xs text-gray-400'>
+                              {new Date(review.createdAt).toLocaleDateString('vi-VN')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className='flex gap-0.5 shrink-0'>
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              size={13}
+                              className={s <= review.rating ? 'text-yellow-400' : 'text-gray-200'}
+                              fill={s <= review.rating ? 'currentColor' : 'none'}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className='text-sm text-gray-700 mt-3 leading-relaxed whitespace-pre-wrap'>{review.content}</p>
+
+                      {/* Ảnh đính kèm */}
+                      {review.images && review.images.length > 0 && (
+                        <div className='flex gap-2 mt-3 flex-wrap'>
+                          {review.images.map((img: string, i: number) => (
+                            <img
+                              key={i}
+                              src={img}
+                              className='w-16 h-16 object-cover rounded-xl border border-gray-100'
+                              alt=''
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Vote Hữu ích */}
+                      <div className='mt-4 flex items-center gap-4'>
+                        <button
+                          onClick={() => !review.has_voted && handleVoteHelpful(review._id)}
+                          className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition ${review.has_voted ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+                        >
+                          <ThumbsUp size={14} className={review.has_voted ? 'fill-current' : ''} />
+                          Hữu ích {review.helpful_count > 0 ? `(${review.helpful_count})` : ''}
+                        </button>
+                      </div>
+
+                      {/* Admin Reply */}
+                      {(review.reply || review.admin_reply) && (
+                        <div className='mt-4 bg-gray-50 p-4 rounded-xl border border-gray-100 relative ml-4'>
+                          <div className='absolute -top-2 left-6 w-4 h-4 bg-gray-50 border-t border-l border-gray-100 rotate-45'></div>
+                          <p className='text-xs font-bold text-gray-800 mb-1 flex items-center gap-2'>
+                            <BadgeCheck size={14} className='text-blue-500' />
+                            Phản hồi từ Admin Support
+                          </p>
+                          <p className='text-sm text-gray-600 leading-relaxed'>
+                            {typeof (review.reply || review.admin_reply) === 'string'
+                              ? review.reply || review.admin_reply
+                              : review.reply?.content ||
+                                review.admin_reply?.content ||
+                                'Cảm ơn bạn đã đánh giá sản phẩm!'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+
+                {/* Load thêm */}
+                {reviewsPage < reviewsMeta.totalPages && (
+                  <button
+                    onClick={handleLoadMoreReviews}
+                    disabled={reviewsLoadingMore}
+                    className='w-full py-3 rounded-2xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition flex items-center justify-center gap-2'
+                  >
+                    {reviewsLoadingMore ? (
+                      <>
+                        <Loader2 size={16} className='animate-spin' /> Đang tải...
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown size={16} /> Xem thêm đánh giá
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          {/* ==== END REVIEWS ==== */}
         </div>
       </div>
     </div>

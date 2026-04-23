@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, ShoppingCart, User, Bell, Moon, Sun, ChevronRight, Loader2 } from 'lucide-react'
+import { Search, ShoppingCart, User, Bell, Moon, Sun, ChevronRight, Loader2, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import AuthModal from './AuthModal'
 import { API_BASE_URL, USER_INFO_KEY, REFRESH_TOKEN_KEY, TOKEN_KEY, resolveImageUrl } from '../api/config'
@@ -31,15 +31,18 @@ interface NotificationItem {
 }
 
 function Header() {
+  const headerRef = useRef<HTMLElement | null>(null)
   const [keyword, setKeyword] = useState('')
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [isDark, setIsDark] = useState(false)
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const navigate = useNavigate()
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authInitialView, setAuthInitialView] = useState<'login' | 'register'>('login')
   const searchWrapRef = useRef<HTMLDivElement | null>(null)
+  const mobileSearchRef = useRef<HTMLDivElement | null>(null)
   const cartWrapRef = useRef<HTMLDivElement | null>(null)
   const userWrapRef = useRef<HTMLDivElement | null>(null)
   const notiWrapRef = useRef<HTMLDivElement | null>(null)
@@ -83,6 +86,26 @@ function Header() {
     const metaTheme = document.querySelector('meta[name="theme-color"]')
     if (metaTheme) metaTheme.setAttribute('content', themeColor)
   }, [isDark])
+
+  useEffect(() => {
+    document.body.style.overflow = isMobileSearchOpen ? 'hidden' : ''
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isMobileSearchOpen])
+
+  useEffect(() => {
+    const syncHeaderHeight = () => {
+      const height = headerRef.current?.offsetHeight ?? 0
+      document.documentElement.style.setProperty('--header-height', `${height}px`)
+    }
+
+    syncHeaderHeight()
+    window.addEventListener('resize', syncHeaderHeight)
+    return () => {
+      window.removeEventListener('resize', syncHeaderHeight)
+    }
+  }, [userInfo, keyword, suggestions.length, isMobileSearchOpen])
 
   const toggleTheme = () => setIsDark((prev) => !prev)
 
@@ -340,7 +363,9 @@ function Header() {
       }
 
       if (searchWrapRef.current && !searchWrapRef.current.contains(target)) {
-        setSuggestions([])
+        if (!mobileSearchRef.current || !mobileSearchRef.current.contains(target)) {
+          setSuggestions([])
+        }
       }
     }
 
@@ -381,10 +406,71 @@ function Header() {
 
   const isSearchPopoverOpen = Boolean(keyword.trim())
 
+  const renderSearchSuggestions = (mode: 'desktop' | 'mobile') => {
+    if (!isSearchPopoverOpen) return null
+
+    return (
+      <div
+        className={
+          mode === 'desktop'
+            ? 'absolute top-full left-0 w-full bg-white text-black rounded-3xl shadow-2xl mt-3 z-50 overflow-hidden border border-gray-100'
+            : 'mt-3 overflow-hidden rounded-3xl border border-gray-100 bg-white text-black shadow-2xl'
+        }
+      >
+        <div className='flex items-center justify-between border-b border-gray-100 px-4 py-3'>
+          <div>
+            <p className='text-[11px] font-black uppercase tracking-[0.22em] text-red-500'>Tìm kiếm sản phẩm</p>
+            <p className='text-xs text-gray-500'>Kết quả phù hợp với từ khóa hiện tại</p>
+          </div>
+          {isSearching && <Loader2 className='animate-spin text-red-500' size={18} />}
+        </div>
+
+        <div className='max-h-[340px] overflow-auto p-2'>
+          {isSearching ? (
+            <div className='px-4 py-8 text-center text-sm text-gray-500'>Đang tìm kiếm...</div>
+          ) : suggestions.length > 0 ? (
+            suggestions.map((item) => (
+              <button
+                key={item._id}
+                type='button'
+                onClick={() => {
+                  setKeyword('')
+                  setSuggestions([])
+                  setIsMobileSearchOpen(false)
+                  navigate(`/product/${item._id}`)
+                }}
+                className='flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-red-50'
+              >
+                <div className='h-11 w-11 shrink-0 overflow-hidden rounded-2xl bg-gray-100'>
+                  <img
+                    src={
+                      resolveImageUrl(item.thumbnail || item.image) || 'https://via.placeholder.com/80x80?text=7Store'
+                    }
+                    alt={item.name}
+                    className='h-full w-full object-cover'
+                  />
+                </div>
+                <div className='min-w-0 flex-1'>
+                  <p className='truncate text-sm font-semibold text-gray-900'>{item.name}</p>
+                  <p className='mt-0.5 text-xs text-gray-500'>Bấm để xem chi tiết sản phẩm</p>
+                </div>
+                <ChevronRight size={16} className='text-gray-300' />
+              </button>
+            ))
+          ) : (
+            <div className='px-4 py-8 text-center text-sm text-gray-500'>
+              Không tìm thấy sản phẩm phù hợp. Hãy thử từ khóa khác.
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <header className='theme-header sticky top-0 z-50 shadow-md'>
+    <header ref={headerRef} className='theme-header sticky top-0 z-50 shadow-md'>
       <div className='mx-auto max-w-7xl px-3 py-3 sm:px-4 sm:py-4'>
-        <div className='flex items-center justify-between gap-2 sm:gap-4'>
+        <div className='flex items-center gap-2 sm:gap-3'>
           <img
             src='/logo.svg'
             alt='7Store Logo'
@@ -392,7 +478,36 @@ function Header() {
             className='h-8 w-auto shrink-0 cursor-pointer object-contain transition-opacity hover:opacity-80 sm:h-10'
           />
 
-          <div className='flex items-center gap-2 font-medium sm:gap-4 md:gap-6'>
+          <div ref={searchWrapRef} className='relative hidden flex-1 md:block'>
+            <div className='relative w-full max-w-[520px] lg:max-w-[620px]'>
+              <Search className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' size={18} />
+              <input
+                value={keyword}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder='Tìm kiếm điện thoại, laptop...'
+                className='w-full rounded-full py-2 pl-10 pr-4 text-black outline-none focus:ring-2 focus:ring-yellow-400 theme-search'
+                onFocus={() => {
+                  if (keyword.trim()) setSuggestions((prev) => prev)
+                }}
+              />
+              {renderSearchSuggestions('desktop')}
+            </div>
+          </div>
+
+          <div className='ml-auto flex items-center gap-2 font-medium sm:gap-3 lg:gap-5'>
+            <button
+              onClick={() => {
+                setIsMobileSearchOpen(true)
+                setIsCartPopoverOpen(false)
+                setIsUserPopoverOpen(false)
+                setIsNotiPopoverOpen(false)
+              }}
+              className='rounded-full p-2 transition hover:bg-white/10 hover:text-yellow-300 md:hidden'
+              title='Tìm kiếm'
+            >
+              <Search size={20} />
+            </button>
+
             <button
               onClick={toggleTheme}
               className='flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-2.5 py-2 text-white shadow-sm transition hover:bg-white/20 sm:px-3'
@@ -517,72 +632,48 @@ function Header() {
             </div>
           </div>
         </div>
+      </div>
 
-        <div ref={searchWrapRef} className='relative mt-3'>
-          <div className='relative mx-auto w-full max-w-3xl'>
-            <Search className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' size={18} />
-            <input
-              value={keyword}
-              onChange={(e) => handleSearch(e.target.value)}
-              placeholder='Tìm kiếm điện thoại, laptop...'
-              className='w-full pl-10 pr-4 py-2 rounded-xl text-black outline-none focus:ring-2 focus:ring-yellow-400 theme-search'
-              onFocus={() => {
-                if (keyword.trim()) setSuggestions((prev) => prev)
-              }}
-            />
-            {isSearchPopoverOpen && (
-              <div className='absolute top-full left-0 w-full bg-white text-black rounded-3xl shadow-2xl mt-3 z-50 overflow-hidden border border-gray-100'>
-                <div className='flex items-center justify-between border-b border-gray-100 px-4 py-3'>
-                  <div>
-                    <p className='text-[11px] font-black uppercase tracking-[0.22em] text-red-500'>Tìm kiếm sản phẩm</p>
-                    <p className='text-xs text-gray-500'>Kết quả phù hợp với từ khóa hiện tại</p>
-                  </div>
-                  {isSearching && <Loader2 className='animate-spin text-red-500' size={18} />}
-                </div>
-
-                <div className='max-h-[340px] overflow-auto p-2'>
-                  {isSearching ? (
-                    <div className='px-4 py-8 text-center text-sm text-gray-500'>Đang tìm kiếm...</div>
-                  ) : suggestions.length > 0 ? (
-                    suggestions.map((item) => (
-                      <button
-                        key={item._id}
-                        type='button'
-                        onClick={() => {
-                          setKeyword('')
-                          setSuggestions([])
-                          navigate(`/product/${item._id}`)
-                        }}
-                        className='flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-red-50'
-                      >
-                        <div className='h-11 w-11 shrink-0 overflow-hidden rounded-2xl bg-gray-100'>
-                          <img
-                            src={
-                              resolveImageUrl(item.thumbnail || item.image) ||
-                              'https://via.placeholder.com/80x80?text=7Store'
-                            }
-                            alt={item.name}
-                            className='h-full w-full object-cover'
-                          />
-                        </div>
-                        <div className='min-w-0 flex-1'>
-                          <p className='truncate text-sm font-semibold text-gray-900'>{item.name}</p>
-                          <p className='mt-0.5 text-xs text-gray-500'>Bấm để xem chi tiết sản phẩm</p>
-                        </div>
-                        <ChevronRight size={16} className='text-gray-300' />
-                      </button>
-                    ))
-                  ) : (
-                    <div className='px-4 py-8 text-center text-sm text-gray-500'>
-                      Không tìm thấy sản phẩm phù hợp. Hãy thử từ khóa khác.
-                    </div>
-                  )}
-                </div>
+      {isMobileSearchOpen && (
+        <div
+          className='fixed inset-0 z-[70] bg-black/55 p-3 md:hidden'
+          onClick={() => {
+            setIsMobileSearchOpen(false)
+            setSuggestions([])
+          }}
+        >
+          <div
+            ref={mobileSearchRef}
+            className='mx-auto mt-14 w-full max-w-xl rounded-3xl bg-white p-3 shadow-2xl'
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className='flex items-center gap-2'>
+              <div className='relative flex-1'>
+                <Search className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' size={18} />
+                <input
+                  autoFocus
+                  value={keyword}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  placeholder='Tìm kiếm điện thoại, laptop...'
+                  className='w-full rounded-full border border-gray-200 py-2 pl-10 pr-4 text-black outline-none focus:ring-2 focus:ring-yellow-400'
+                />
               </div>
-            )}
+              <button
+                onClick={() => {
+                  setIsMobileSearchOpen(false)
+                  setSuggestions([])
+                }}
+                className='rounded-full p-2 text-gray-600 transition hover:bg-gray-100 hover:text-black'
+                title='Đóng tìm kiếm'
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {renderSearchSuggestions('mobile')}
           </div>
         </div>
-      </div>
+      )}
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialView={authInitialView} />
     </header>
