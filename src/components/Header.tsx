@@ -138,6 +138,7 @@ function Header() {
       return {
         _id: variant?._id || item._id || item.id || `${index}`,
         name: item.name || (product?.name as string) || 'Sản phẩm từ Server',
+        variantId: variant?._id || item.variant_id?._id || item.variant_id || undefined,
         price: Number(variant?.price || product?.price || 0),
         quantity: Number(item.quantity || 1),
         image: item.image || (product?.image as string) || undefined,
@@ -158,7 +159,36 @@ function Header() {
     try {
       setIsCartLoading(true)
       const res = await fetchClient<unknown>('/cart')
-      const items = normalizeCartItems(res)
+      const baseItems = normalizeCartItems(res)
+
+      const items = await Promise.all(
+        baseItems.map(async (item) => {
+          if (!item.variantId) return item
+
+          try {
+            const promoRes = await fetchClient<Record<string, unknown>>(`/promotions/best/${item.variantId}`)
+            const promo = (promoRes as any)?.data || promoRes
+
+            const promoFinalPrice = Number(promo?.final_price)
+            const promoOriginalPrice = Number(promo?.original_price)
+
+            if (Number.isFinite(promoFinalPrice) && promoFinalPrice > 0) {
+              return {
+                ...item,
+                price: promoFinalPrice,
+                oldPrice:
+                  Number.isFinite(promoOriginalPrice) && promoOriginalPrice > promoFinalPrice
+                    ? promoOriginalPrice
+                    : item.price
+              }
+            }
+          } catch {
+            // giữ giá gốc nếu promo lỗi
+          }
+
+          return item
+        })
+      )
 
       const total = items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0)
       setCartCount(total)

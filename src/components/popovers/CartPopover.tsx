@@ -4,8 +4,10 @@ import { resolveImageUrl } from '../../api/config'
 export interface CartPopoverItem {
   _id?: string
   id?: string | number
+  variantId?: string
   name: string
   price: number
+  oldPrice?: number
   quantity: number
   image?: string
   variant?: string
@@ -60,9 +62,16 @@ export default function CartPopover({ open, loading = false, items, totalItems, 
                 <div className='min-w-0 flex-1'>
                   <p className='truncate text-sm font-semibold text-gray-900'>{item.name}</p>
                   <p className='mt-0.5 text-xs text-gray-500'>Số lượng: x{item.quantity}</p>
-                  <p className='mt-1 text-sm font-bold text-red-600'>
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}
-                  </p>
+                  <div className='mt-1 flex items-baseline gap-2 flex-wrap'>
+                    <p className='text-sm font-bold text-red-600'>
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}
+                    </p>
+                    {item.oldPrice && item.oldPrice > item.price ? (
+                      <p className='text-xs text-gray-400 line-through'>
+                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.oldPrice)}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             ))}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { Routes, Route, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { HelmetProvider as HelmetProviderBase } from 'react-helmet-async'
 import { TOKEN_KEY } from './api/config'
 import Header from './components/Header'
@@ -8,8 +8,6 @@ import AIChat from './components/AIChat'
 import Toast from './components/Toast'
 
 import Home from './pages/Home'
-import Login from './pages/Login'
-import Register from './pages/Register'
 import Cart from './pages/Cart'
 import ProductDetail from './pages/ProductDetail'
 import CategoryPage from './pages/CategoryPage'
@@ -33,7 +31,6 @@ import ProfileWarranty from './pages/ProfileWarranty'
 import ProfilePromotions from './pages/ProfilePromotions'
 
 const path = {
-  login: '/login',
   dashboard: '/'
 }
 
@@ -60,13 +57,19 @@ function useAuth() {
 //Tạo Protect để bảo vệ web khi user biêt domain mà chưa đăng nhập thì những cái như profile, apply k cho phép truy cập
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth()
-  return isAuthenticated ? <Outlet /> : <Navigate to={path.login} replace />
-}
+  const navigate = useNavigate()
+  const location = useLocation()
 
-// Chặn User vào lại trang login khi đã login rồi sẽ Navigate lại trang chủ
-function RejectedRoute() {
-  const { isAuthenticated } = useAuth()
-  return !isAuthenticated ? <Outlet /> : <Navigate to={path.dashboard} replace />
+  useEffect(() => {
+    if (!isAuthenticated) {
+      window.dispatchEvent(new CustomEvent('openAuthModal', { detail: { view: 'login' } }))
+      if (location.pathname !== path.dashboard) {
+        navigate(path.dashboard, { replace: true })
+      }
+    }
+  }, [isAuthenticated, location.pathname, navigate])
+
+  return isAuthenticated ? <Outlet /> : null
 }
 
 function App() {
@@ -82,11 +85,6 @@ function App() {
         <Route path='/cart' element={<Cart />} />
         <Route path='/product/:id' element={<ProductDetail />} />
         <Route path='/category/:name' element={<CategoryPage />} />
-
-        <Route element={<RejectedRoute />}>
-          <Route path='/login' element={<Login />} />
-          <Route path='/register' element={<Register />} />
-        </Route>
 
         {/* PROFILE NESTED ROUTES */}
         <Route element={<ProtectedRoute />}>

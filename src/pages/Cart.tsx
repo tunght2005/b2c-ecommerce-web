@@ -556,7 +556,7 @@ const Cart = () => {
         <div className='flex flex-col lg:flex-row gap-6 items-start'>
           {/* --- CỘT TRÁI: DANH SÁCH GIỎ HÀNG --- */}
           <div className='lg:w-2/3 w-full space-y-3'>
-            <div className='bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center gap-3 sticky top-[80px] z-10'>
+            <div className='bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center gap-3 sticky top-20 z-10'>
               <input
                 type='checkbox'
                 checked={isAllSelected}
@@ -586,7 +586,7 @@ const Cart = () => {
                   onChange={() => handleSelectItem(item.id)}
                   className='w-5 h-5 accent-[#E7000B] rounded cursor-pointer sm:self-center self-start mt-1 sm:mt-0'
                 />
-                <div className='w-20 h-20 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100'>
+                <div className='w-20 h-20 bg-gray-50 rounded-lg overflow-hidden shrink-0 border border-gray-100'>
                   <img src={item.image} alt={item.name} className='w-full h-full object-cover' />
                 </div>
                 <div className='flex-1 min-w-0 sm:pr-4'>
@@ -600,11 +600,11 @@ const Cart = () => {
                     <span className='text-xs text-gray-400 line-through'>{formatCurrency(item.oldPrice)}</span>
                   </div>
                 </div>
-                <div className='hidden sm:block text-right w-28 flex-shrink-0'>
+                <div className='hidden sm:block text-right w-28 shrink-0'>
                   <span className='text-base font-semibold text-gray-900 block'>{formatCurrency(item.price)}</span>
                   <span className='text-xs text-gray-400 line-through'>{formatCurrency(item.oldPrice)}</span>
                 </div>
-                <div className='flex items-center border border-gray-200 rounded-lg bg-white w-28 flex-shrink-0 justify-between'>
+                <div className='flex items-center border border-gray-200 rounded-lg bg-white w-28 shrink-0 justify-between'>
                   <button
                     onClick={() => updateQuantity(item.id, -1)}
                     className='p-2 text-gray-600 hover:bg-gray-50 hover:text-[#E7000B] transition rounded-l-lg'
@@ -619,7 +619,7 @@ const Cart = () => {
                     <Plus size={14} />
                   </button>
                 </div>
-                <div className='hidden sm:block text-right w-32 flex-shrink-0 pr-2'>
+                <div className='hidden sm:block text-right w-32 shrink-0 pr-2'>
                   <span className='text-base font-bold text-[#E7000B] block'>
                     {formatCurrency(item.price * item.quantity)}
                   </span>
@@ -636,7 +636,7 @@ const Cart = () => {
           </div>
 
           {/* --- CỘT PHẢI: TÓM TẮT & NÚT ĐẶT HÀNG --- */}
-          <div className='lg:w-1/3 w-full space-y-4 sticky top-[145px]'>
+          <div className='lg:w-1/3 w-full space-y-4 sticky top-36.25'>
             <div className='bg-white rounded-xl shadow-sm border border-gray-100 p-4'>
               <div className='flex items-center justify-between mb-3 border-b border-gray-100 pb-3'>
                 <h3 className='font-semibold text-gray-600 flex items-center gap-2 text-sm'>
@@ -701,7 +701,7 @@ const Cart = () => {
       {/* --- POPUP XÁC NHẬN XÓA --- */}
       {showConfirmDelete && (
         <div
-          className='fixed inset-0 bg-black/60 z-[220] flex items-center justify-center p-4 backdrop-blur-sm'
+          className='fixed inset-0 bg-black/60 z-220 flex items-center justify-center p-4 backdrop-blur-sm'
           onClick={() => setShowConfirmDelete(false)}
         >
           <div
@@ -737,7 +737,7 @@ const Cart = () => {
       {/* --- 1. POPUP THAY ĐỔI ĐỊA CHỈ (GIỮ NGUYÊN) --- */}
       {isAddressModalOpen && (
         <div
-          className='fixed inset-0 bg-black/50 z-[220] flex items-center justify-center p-4 backdrop-blur-sm'
+          className='fixed inset-0 bg-black/50 z-220 flex items-center justify-center p-4 backdrop-blur-sm'
           onClick={() => setIsAddressModalOpen(false)}
         >
           <div
@@ -766,7 +766,7 @@ const Cart = () => {
                     className={`p-4 border rounded-xl cursor-pointer transition flex items-start gap-4 hover:border-red-300 ${isSelected ? 'border-[#E7000B] bg-red-50/50' : 'border-gray-200'}`}
                   >
                     <div
-                      className={`w-5 h-5 rounded-full border-2 mt-1 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-[#E7000B]' : 'border-gray-300'}`}
+                      className={`w-5 h-5 rounded-full border-2 mt-1 flex items-center justify-center shrink-0 ${isSelected ? 'border-[#E7000B]' : 'border-gray-300'}`}
                     >
                       {isSelected && <div className='w-2.5 h-2.5 bg-[#E7000B] rounded-full'></div>}
                     </div>
@@ -805,7 +805,7 @@ const Cart = () => {
       {/* --- FORM THÊM ĐỊA CHỈ MỚI --- */}
       {isAddNewAddressOpen && (
         <div
-          className='fixed inset-0 bg-black/60 z-[210] flex items-center justify-center p-4 backdrop-blur-sm'
+          className='fixed inset-0 bg-black/60 z-210 flex items-center justify-center p-4 backdrop-blur-sm'
           onClick={() => setIsAddNewAddressOpen(false)}
         >
           <div
@@ -942,7 +942,7 @@ const Cart = () => {
       {/* --- 2. POPUP THANH TOÁN (CHECKOUT MODAL) TÍCH HỢP VOUCHER --- */}
       {isCheckoutModalOpen && (
         <div
-          className='fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm'
+          className='fixed inset-0 bg-black/60 z-200 flex items-center justify-center p-4 backdrop-blur-sm'
           onClick={() => setIsCheckoutModalOpen(false)}
         >
           <div
@@ -983,7 +983,7 @@ const Cart = () => {
                     </div>
                     <button
                       onClick={() => setIsAddressModalOpen(true)}
-                      className='text-[#E7000B] text-sm font-medium hover:underline flex-shrink-0'
+                      className='text-[#E7000B] text-sm font-medium hover:underline shrink-0'
                     >
                       Thay đổi
                     </button>
@@ -1037,7 +1037,7 @@ const Cart = () => {
                   <div className='space-y-4 mb-6'>
                     {selectedItems.map((item) => (
                       <div key={item.id} className='flex gap-4'>
-                        <div className='w-16 h-16 bg-white border border-gray-200 rounded-lg overflow-hidden flex-shrink-0 relative'>
+                        <div className='w-16 h-16 bg-white border border-gray-200 rounded-lg overflow-hidden shrink-0 relative'>
                           <img src={item.image} alt={item.name} className='w-full h-full object-cover' />
                           <span className='absolute -top-2 -right-2 bg-gray-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full border-2 border-white'>
                             {item.quantity}

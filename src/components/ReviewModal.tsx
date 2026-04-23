@@ -267,7 +267,7 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
   // --- SUCCESS SCREEN ---
   if (isSuccess) {
     return (
-      <div className='fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm animate-fadeIn'>
+      <div className='fixed inset-0 z-60 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm animate-fadeIn'>
         <div className='bg-white rounded-3xl w-full max-w-sm p-8 flex flex-col items-center text-center shadow-2xl'>
           <div className='w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-5'>
             <CheckCircle2 className='text-green-500' size={40} />
@@ -288,7 +288,7 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
   }
 
   return (
-    <div className='fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4 backdrop-blur-sm animate-fadeIn'>
+    <div className='fixed inset-0 z-60 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4 backdrop-blur-sm animate-fadeIn'>
       <div className='bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col relative'>
         {/* Close Button */}
         <button
@@ -300,7 +300,7 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
 
         {/* Header */}
         <div className='flex items-center gap-3 p-6 border-b border-gray-100 bg-white z-10 sticky top-0'>
-          <div className='w-12 h-12 rounded-full bg-yellow-50 flex items-center justify-center flex-shrink-0'>
+          <div className='w-12 h-12 rounded-full bg-yellow-50 flex items-center justify-center shrink-0'>
             <Star className='text-yellow-500' size={24} fill='currentColor' />
           </div>
           <div>
@@ -319,10 +319,7 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
                 className='w-full flex items-center gap-3 p-3 border border-gray-200 rounded-2xl hover:border-red-300 transition text-left'
               >
                 {currentItem.image && (
-                  <img
-                    src={currentItem.image}
-                    className='w-10 h-10 object-cover rounded-xl bg-gray-100 flex-shrink-0'
-                  />
+                  <img src={currentItem.image} className='w-10 h-10 object-cover rounded-xl bg-gray-100 shrink-0' />
                 )}
                 <span className='flex-1 text-sm font-medium text-gray-800 line-clamp-1'>
                   {getItemName(currentItem)}
@@ -344,7 +341,7 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
                       className={`w-full flex items-center gap-3 p-3 hover:bg-red-50 transition text-left ${idx === selectedItemIndex ? 'bg-red-50' : ''}`}
                     >
                       {item.image && (
-                        <img src={item.image} className='w-10 h-10 object-cover rounded-xl bg-gray-100 flex-shrink-0' />
+                        <img src={item.image} className='w-10 h-10 object-cover rounded-xl bg-gray-100 shrink-0' />
                       )}
                       <span className='text-sm font-medium text-gray-800 line-clamp-1'>{getItemName(item)}</span>
                     </button>
@@ -358,7 +355,7 @@ export default function ReviewModal({ order, onClose }: ReviewModalProps) {
           {order.items.length === 1 && (
             <div className='flex items-center gap-3 p-3 bg-gray-50 rounded-2xl'>
               {currentItem.image && (
-                <img src={currentItem.image} className='w-14 h-14 object-cover rounded-xl bg-white flex-shrink-0' />
+                <img src={currentItem.image} className='w-14 h-14 object-cover rounded-xl bg-white shrink-0' />
               )}
               <div>
                 <p className='font-semibold text-gray-900 text-sm line-clamp-2'>{getItemName(currentItem)}</p>

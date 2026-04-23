@@ -35,10 +35,10 @@ export default function Toast() {
   }, [removeToast])
 
   const icons = {
-    success: <CheckCircle size={18} className='text-green-500 flex-shrink-0' />,
-    error: <XCircle size={18} className='text-red-500 flex-shrink-0' />,
-    info: <Info size={18} className='text-blue-500 flex-shrink-0' />,
-    warning: <Info size={18} className='text-yellow-500 flex-shrink-0' />
+    success: <CheckCircle size={18} className='text-green-500 shrink-0' />,
+    error: <XCircle size={18} className='text-red-500 shrink-0' />,
+    info: <Info size={18} className='text-blue-500 shrink-0' />,
+    warning: <Info size={18} className='text-yellow-500 shrink-0' />
   }
 
   const borders = {
@@ -49,12 +49,12 @@ export default function Toast() {
   }
 
   return (
-    <div className='fixed top-5 right-5 z-[999] flex flex-col gap-2 pointer-events-none'>
+    <div className='fixed top-5 right-5 z-999 flex flex-col gap-2 pointer-events-none'>
       {toasts.map((toast) => (
         <div
           key={toast.id}
           className={`
-            pointer-events-auto flex items-center gap-3 bg-white shadow-xl rounded-xl px-4 py-3 min-w-[260px] max-w-[340px]
+            pointer-events-auto flex items-center gap-3 bg-white shadow-xl rounded-xl px-4 py-3 min-w-65 max-w-85
             ${borders[toast.type]}
             animate-slide-in-right
           `}
@@ -63,7 +63,7 @@ export default function Toast() {
           <span className='text-sm font-medium text-gray-800 flex-1'>{toast.message}</span>
           <button
             onClick={() => removeToast(toast.id)}
-            className='text-gray-400 hover:text-gray-600 transition flex-shrink-0'
+            className='text-gray-400 hover:text-gray-600 transition shrink-0'
           >
             <X size={14} />
           </button>

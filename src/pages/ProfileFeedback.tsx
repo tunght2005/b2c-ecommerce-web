@@ -27,6 +27,18 @@ type Feedback = {
   createdAt: string
 }
 
+type FeedbackReply = {
+  _id: string
+  content: string
+  is_internal?: boolean
+  createdAt: string
+  user_id?: {
+    _id?: string
+    username?: string
+    role?: string
+  }
+}
+
 type DropdownItem = {
   _id: string
   name: string
@@ -66,6 +78,10 @@ export default function ProfileFeedback() {
   const [searchTerm, setSearchTerm] = useState('')
   const [formData, setFormData] = useState({ ref_id: '', title: '', content: '', priority: 'medium' })
   const [errorMsg, setErrorMsg] = useState('')
+  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null)
+  const [feedbackReplies, setFeedbackReplies] = useState<FeedbackReply[]>([])
+  const [isRepliesModalOpen, setIsRepliesModalOpen] = useState(false)
+  const [isRepliesLoading, setIsRepliesLoading] = useState(false)
 
   const fetchData = async () => {
     try {
@@ -166,6 +182,21 @@ export default function ProfileFeedback() {
     }
   }
 
+  const handleOpenReplies = async (feedback: Feedback) => {
+    try {
+      setSelectedFeedback(feedback)
+      setIsRepliesModalOpen(true)
+      setIsRepliesLoading(true)
+      const res = await fetchClient<any>(`/feedback/${feedback._id}/replies`)
+      const replies = Array.isArray(res) ? res : res?.data || []
+      setFeedbackReplies(Array.isArray(replies) ? replies : [])
+    } catch {
+      setFeedbackReplies([])
+    } finally {
+      setIsRepliesLoading(false)
+    }
+  }
+
   const getStatusBadge = (status: Feedback['status']) => {
     switch (status) {
       case 'open':
@@ -208,7 +239,7 @@ export default function ProfileFeedback() {
 
   return (
     <>
-      <div className='bg-white rounded-3xl p-6 shadow-sm border border-gray-100 min-h-[500px]'>
+      <div className='bg-white rounded-3xl p-6 shadow-sm border border-gray-100 min-h-125'>
         {/* Header */}
         <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6'>
           <div>
@@ -289,7 +320,7 @@ export default function ProfileFeedback() {
                   {/* Sản phẩm liên quan */}
                   {fb.product_id && (
                     <div className='flex items-center gap-2 mb-3 bg-white p-2 border border-gray-100 rounded-xl max-w-sm'>
-                      <div className='w-9 h-9 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0'>
+                      <div className='w-9 h-9 bg-gray-100 rounded-lg overflow-hidden shrink-0'>
                         {typeof fb.product_id === 'object' && fb.product_id.thumbnail ? (
                           <img src={fb.product_id.thumbnail} alt='' className='w-full h-full object-cover' />
                         ) : (
@@ -307,7 +338,7 @@ export default function ProfileFeedback() {
                   {/* Đơn hàng liên quan */}
                   {fb.order_id && (
                     <div className='flex items-center gap-3 mb-3 bg-white p-2 border border-gray-100 rounded-xl max-w-sm'>
-                      <div className='w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0 border border-red-100'>
+                      <div className='w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center shrink-0 border border-red-100'>
                         <Package size={16} className='text-red-400' />
                       </div>
                       <div>
@@ -323,7 +354,7 @@ export default function ProfileFeedback() {
                   )}
 
                   <h3 className='font-bold text-gray-900 mb-2 flex items-start gap-2'>
-                    <MessageSquare size={16} className='text-red-400 mt-0.5 flex-shrink-0' />
+                    <MessageSquare size={16} className='text-red-400 mt-0.5 shrink-0' />
                     {fb.title}
                   </h3>
                   <p className='text-gray-600 text-sm bg-white p-3 rounded-xl border border-gray-100 mb-3'>
@@ -331,7 +362,11 @@ export default function ProfileFeedback() {
                   </p>
 
                   <div className='flex justify-end'>
-                    <button className='text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 transition'>
+                    <button
+                      type='button'
+                      onClick={() => handleOpenReplies(fb)}
+                      className='text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 transition'
+                    >
                       Xem phản hồi <ChevronRight size={14} />
                     </button>
                   </div>
@@ -365,12 +400,76 @@ export default function ProfileFeedback() {
         )}
       </div>
 
+      {isRepliesModalOpen && selectedFeedback && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm'>
+          <div className='bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col'>
+            <div className='border-b px-6 py-4 flex items-center justify-between bg-gray-50/50'>
+              <div>
+                <h3 className='text-lg font-bold text-gray-900'>Phản hồi hỗ trợ</h3>
+                <p className='text-xs text-gray-500 mt-1'>Ticket #{selectedFeedback._id.slice(-8).toUpperCase()}</p>
+              </div>
+              <button
+                type='button'
+                onClick={() => {
+                  setIsRepliesModalOpen(false)
+                  setSelectedFeedback(null)
+                  setFeedbackReplies([])
+                }}
+                className='text-gray-400 hover:text-gray-700 hover:bg-gray-100 p-2 rounded-full transition'
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className='p-6 overflow-y-auto flex-1 space-y-3'>
+              <div className='rounded-2xl border border-gray-100 bg-gray-50 p-4'>
+                <p className='text-xs text-gray-500'>Nội dung bạn đã gửi</p>
+                <p className='text-sm font-semibold text-gray-900 mt-1'>{selectedFeedback.title}</p>
+                <p className='text-sm text-gray-700 mt-2 whitespace-pre-wrap'>{selectedFeedback.content}</p>
+              </div>
+
+              {isRepliesLoading ? (
+                <div className='flex items-center justify-center py-10 text-gray-500'>
+                  <Loader2 size={20} className='animate-spin mr-2' /> Đang tải phản hồi...
+                </div>
+              ) : feedbackReplies.length > 0 ? (
+                feedbackReplies.map((reply) => {
+                  const role = reply.user_id?.role || ''
+                  const author = role === 'customer' ? 'Bạn' : role === 'support' ? 'Support' : 'Admin'
+                  const isStaff = role === 'support' || role === 'admin'
+                  return (
+                    <div
+                      key={reply._id}
+                      className={`rounded-2xl border p-4 ${isStaff ? 'bg-blue-50 border-blue-100' : 'bg-white border-gray-200'}`}
+                    >
+                      <div className='flex items-center justify-between gap-3'>
+                        <p className={`text-sm font-semibold ${isStaff ? 'text-blue-700' : 'text-gray-800'}`}>
+                          {author}
+                        </p>
+                        <p className='text-xs text-gray-500'>{new Date(reply.createdAt).toLocaleString('vi-VN')}</p>
+                      </div>
+                      <p className={`text-sm mt-2 whitespace-pre-wrap ${isStaff ? 'text-blue-900' : 'text-gray-700'}`}>
+                        {reply.content}
+                      </p>
+                    </div>
+                  )
+                })
+              ) : (
+                <div className='text-center py-10 text-gray-500 text-sm'>
+                  Chưa có phản hồi từ admin/support cho ticket này.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL */}
       {isModalOpen && (
         <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm'>
           <div className='bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col'>
             {/* Header */}
-            <div className='border-b px-6 py-4 flex items-center justify-between bg-gray-50/50 flex-shrink-0'>
+            <div className='border-b px-6 py-4 flex items-center justify-between bg-gray-50/50 shrink-0'>
               <h2 className='text-lg font-bold text-gray-900 flex items-center gap-2'>
                 {activeTab === 'product' ? (
                   <>
@@ -458,11 +557,7 @@ export default function ProfileFeedback() {
                                 className='w-full flex items-center gap-3 px-3 py-2.5 hover:bg-red-50 transition text-left'
                               >
                                 {activeTab === 'product' && item.thumbnail ? (
-                                  <img
-                                    src={item.thumbnail}
-                                    alt=''
-                                    className='w-9 h-9 rounded object-cover flex-shrink-0'
-                                  />
+                                  <img src={item.thumbnail} alt='' className='w-9 h-9 rounded object-cover shrink-0' />
                                 ) : (
                                   <div className='w-9 h-9 bg-gray-100 text-gray-400 rounded-lg flex items-center justify-center shrink-0'>
                                     {activeTab === 'product' ? <ShoppingBag size={16} /> : <Package size={16} />}
@@ -567,7 +662,7 @@ export default function ProfileFeedback() {
                 <button
                   type='submit'
                   disabled={isSubmitting}
-                  className='bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-xl font-semibold transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed min-w-[130px]'
+                  className='bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-xl font-semibold transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed min-w-32.5'
                 >
                   {isSubmitting ? (
                     <Loader2 className='animate-spin' size={20} />

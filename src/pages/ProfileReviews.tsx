@@ -14,6 +14,15 @@ interface Review {
   rating: number
   content: string
   images?: string[]
+  admin_reply?: {
+    content?: string
+    role?: 'admin' | 'support'
+    createdAt?: string
+    user_id?: {
+      username?: string
+      role?: string
+    }
+  }
   createdAt: string
 }
 
@@ -190,6 +199,26 @@ export default function ProfileReviews() {
                     <p className='text-gray-700 text-sm md:text-base leading-relaxed whitespace-pre-wrap'>
                       {review.content}
                     </p>
+
+                    {review.admin_reply?.content ? (
+                      <div className='mt-4 rounded-2xl border border-blue-100 bg-blue-50/60 p-4'>
+                        <p className='text-xs font-bold uppercase tracking-wide text-blue-700'>
+                          Phản hồi từ {review.admin_reply.role === 'support' ? 'Support' : 'Admin'}
+                        </p>
+                        <p className='mt-1 whitespace-pre-wrap text-sm text-blue-900'>{review.admin_reply.content}</p>
+                        {review.admin_reply.createdAt ? (
+                          <p className='mt-2 text-xs text-blue-700'>
+                            {new Date(review.admin_reply.createdAt).toLocaleDateString('vi-VN', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric'
+                            })}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
 
                     {/* Review Images */}
                     {review.images && review.images.length > 0 && (
