@@ -382,18 +382,144 @@ function Header() {
   const isSearchPopoverOpen = Boolean(keyword.trim())
 
   return (
-    <header className='theme-header shadow-md sticky top-0 z-50'>
-      <div className='max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4'>
-        {/* LOGO MỚI ĐƯỢC THÊM VÀO ĐÂY */}
-        <img
-          src='/logo.svg'
-          alt='7Store Logo'
-          onClick={() => navigate('/')}
-          className='h-8 sm:h-10 w-auto object-contain cursor-pointer hover:opacity-80 transition-opacity shrink-0'
-        />
+    <header className='theme-header sticky top-0 z-50 shadow-md'>
+      <div className='mx-auto max-w-7xl px-3 py-3 sm:px-4 sm:py-4'>
+        <div className='flex items-center justify-between gap-2 sm:gap-4'>
+          <img
+            src='/logo.svg'
+            alt='7Store Logo'
+            onClick={() => navigate('/')}
+            className='h-8 w-auto shrink-0 cursor-pointer object-contain transition-opacity hover:opacity-80 sm:h-10'
+          />
 
-        <div ref={searchWrapRef} className='flex-1 flex justify-center relative'>
-          <div className='relative w-full max-w-[500px]'>
+          <div className='flex items-center gap-2 font-medium sm:gap-4 md:gap-6'>
+            <button
+              onClick={toggleTheme}
+              className='flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-2.5 py-2 text-white shadow-sm transition hover:bg-white/20 sm:px-3'
+              title={isDark ? 'Chế độ sáng' : 'Chế độ tối'}
+            >
+              {isDark ? <Sun size={17} /> : <Moon size={17} />}
+              <span className='hidden lg:inline text-sm'>{isDark ? 'Sáng' : 'Tối'}</span>
+            </button>
+
+            {!userInfo ? (
+              <>
+                <button
+                  onClick={() => openAuthModal('login')}
+                  className='flex items-center gap-2 rounded-full px-2 py-2 transition hover:bg-white/10 hover:text-yellow-300 sm:px-3'
+                >
+                  <User size={18} />
+                  <span className='hidden md:inline'>Đăng nhập</span>
+                </button>
+
+                <button
+                  onClick={() => openAuthModal('register')}
+                  className='hidden items-center gap-2 rounded-full px-3 py-2 transition hover:bg-white/10 hover:text-yellow-300 md:flex'
+                >
+                  <User size={18} />
+                  <span>Đăng ký</span>
+                </button>
+              </>
+            ) : (
+              <div ref={userWrapRef} className='relative'>
+                <button
+                  onClick={() => {
+                    setIsUserPopoverOpen((prev) => !prev)
+                    setIsCartPopoverOpen(false)
+                    setSuggestions([])
+                  }}
+                  className='group flex items-center gap-2 rounded-full px-1 py-1 transition hover:bg-white/10 hover:text-yellow-300 sm:px-2'
+                >
+                  <div className='flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border-2 border-white/30 bg-white/20 transition group-hover:border-yellow-300'>
+                    {userInfo.avatar ? (
+                      <img src={userInfo.avatar} alt='Avatar' className='h-full w-full object-cover' />
+                    ) : (
+                      <User size={18} />
+                    )}
+                  </div>
+                  <span className='hidden max-w-[120px] truncate font-bold sm:inline'>
+                    {userInfo.username || 'Người dùng'}
+                  </span>
+                </button>
+
+                <UserPopover
+                  open={isUserPopoverOpen}
+                  user={userInfo}
+                  onProfile={() => {
+                    setIsUserPopoverOpen(false)
+                    navigate('/profile')
+                  }}
+                  onOrders={() => {
+                    setIsUserPopoverOpen(false)
+                    navigate('/profile/orders')
+                  }}
+                  onLogout={handleLogout}
+                />
+              </div>
+            )}
+
+            {userInfo && (
+              <div ref={notiWrapRef} className='relative'>
+                <button
+                  onClick={handleOpenNotifications}
+                  className='relative rounded-full p-2 transition hover:bg-white/10 hover:text-yellow-300'
+                >
+                  <Bell size={20} />
+                  {notiCount > 0 && (
+                    <span className='absolute -right-2.5 -top-1.5 rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-bold text-black'>
+                      {notiCount > 99 ? '99+' : notiCount}
+                    </span>
+                  )}
+                </button>
+
+                <NotificationPopover
+                  open={isNotiPopoverOpen}
+                  loading={isNotiLoading}
+                  items={notifications}
+                  unreadCount={notiCount}
+                  onMarkAsRead={handleNotificationClick}
+                  onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+                  onOpenAll={() => {
+                    setIsNotiPopoverOpen(false)
+                    navigate('/profile/notifications')
+                  }}
+                />
+              </div>
+            )}
+
+            <div ref={cartWrapRef} className='relative'>
+              <button
+                onClick={() => {
+                  setIsCartPopoverOpen((prev) => !prev)
+                  setIsUserPopoverOpen(false)
+                  setSuggestions([])
+                }}
+                className='relative flex items-center gap-2 rounded-full p-2 transition hover:bg-white/10 hover:text-yellow-300'
+              >
+                <ShoppingCart size={26} className='sm:size-7' />
+                {cartCount > 0 && (
+                  <span className='absolute -right-2 -top-1.5 rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-bold text-black'>
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+
+              <CartPopover
+                open={isCartPopoverOpen}
+                loading={isCartLoading}
+                items={cartItems}
+                totalItems={cartCount}
+                onViewCart={() => {
+                  setIsCartPopoverOpen(false)
+                  navigate('/cart')
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div ref={searchWrapRef} className='relative mt-3'>
+          <div className='relative mx-auto w-full max-w-3xl'>
             <Search className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' size={18} />
             <input
               value={keyword}
@@ -429,7 +555,7 @@ function Header() {
                         }}
                         className='flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-red-50'
                       >
-                        <div className='h-11 w-11 flex-shrink-0 overflow-hidden rounded-2xl bg-gray-100'>
+                        <div className='h-11 w-11 shrink-0 overflow-hidden rounded-2xl bg-gray-100'>
                           <img
                             src={
                               resolveImageUrl(item.thumbnail || item.image) ||
@@ -454,128 +580,6 @@ function Header() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-
-        <div className='flex items-center gap-6 font-medium'>
-          <button
-            onClick={toggleTheme}
-            className='flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white rounded-full px-3 py-2 transition shadow-sm border border-white/20'
-            title={isDark ? 'Chế độ sáng' : 'Chế độ tối'}
-          >
-            {isDark ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-          {!userInfo ? (
-            <>
-              <button
-                onClick={() => openAuthModal('login')}
-                className='flex items-center gap-2 hover:text-yellow-300 transition'
-              >
-                <User size={18} />
-                <span className='hidden sm:inline'>Đăng nhập</span>
-              </button>
-
-              <button
-                onClick={() => openAuthModal('register')}
-                className='flex items-center gap-2 hover:text-yellow-300 transition'
-              >
-                <User size={18} />
-                <span className='hidden sm:inline'>Đăng ký</span>
-              </button>
-            </>
-          ) : (
-            <div ref={userWrapRef} className='relative'>
-              <button
-                onClick={() => {
-                  setIsUserPopoverOpen((prev) => !prev)
-                  setIsCartPopoverOpen(false)
-                  setSuggestions([])
-                }}
-                className='flex items-center gap-2 hover:text-yellow-300 transition group'
-              >
-                <div className='w-8 h-8 flex items-center justify-center rounded-full overflow-hidden border-2 border-white/30 group-hover:border-yellow-300 bg-white/20 transition'>
-                  {userInfo.avatar ? (
-                    <img src={userInfo.avatar} alt='Avatar' className='w-full h-full object-cover' />
-                  ) : (
-                    <User size={18} />
-                  )}
-                </div>
-                <span className='hidden sm:inline font-bold truncate max-w-[120px]'>
-                  {userInfo.username || 'Người dùng'}
-                </span>
-              </button>
-
-              <UserPopover
-                open={isUserPopoverOpen}
-                user={userInfo}
-                onProfile={() => {
-                  setIsUserPopoverOpen(false)
-                  navigate('/profile')
-                }}
-                onOrders={() => {
-                  setIsUserPopoverOpen(false)
-                  navigate('/profile/orders')
-                }}
-                onLogout={handleLogout}
-              />
-            </div>
-          )}
-
-          {userInfo && (
-            <div ref={notiWrapRef} className='relative'>
-              <button onClick={handleOpenNotifications} className='relative hover:text-yellow-300 transition'>
-                <Bell size={20} />
-                {notiCount > 0 && (
-                  <span className='absolute -top-2 -right-3 bg-yellow-400 text-black text-xs px-2 py-0.5 rounded-full font-bold'>
-                    {notiCount > 99 ? '99+' : notiCount}
-                  </span>
-                )}
-              </button>
-
-              <NotificationPopover
-                open={isNotiPopoverOpen}
-                loading={isNotiLoading}
-                items={notifications}
-                unreadCount={notiCount}
-                onMarkAsRead={handleNotificationClick}
-                onMarkAllAsRead={handleMarkAllNotificationsAsRead}
-                onOpenAll={() => {
-                  setIsNotiPopoverOpen(false)
-                  navigate('/profile/notifications')
-                }}
-              />
-            </div>
-          )}
-
-          <div ref={cartWrapRef} className='relative'>
-            <button
-              onClick={() => {
-                setIsCartPopoverOpen((prev) => !prev)
-                setIsUserPopoverOpen(false)
-                setSuggestions([])
-              }}
-              className='relative flex items-center gap-2 hover:text-yellow-300 transition'
-            >
-              <ShoppingCart size={30} />
-
-              {/* Nếu có sản phẩm thì mới hiện cục màu vàng, số lượng lấy từ state cartCount */}
-              {cartCount > 0 && (
-                <span className='absolute -top-2 -right-3 bg-yellow-400 text-black text-xs px-2 py-0.5 rounded-full font-bold'>
-                  {cartCount}
-                </span>
-              )}
-            </button>
-
-            <CartPopover
-              open={isCartPopoverOpen}
-              loading={isCartLoading}
-              items={cartItems}
-              totalItems={cartCount}
-              onViewCart={() => {
-                setIsCartPopoverOpen(false)
-                navigate('/cart')
-              }}
-            />
           </div>
         </div>
       </div>

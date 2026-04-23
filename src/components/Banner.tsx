@@ -104,11 +104,6 @@ function Banner() {
     })
   }
 
-  // HÀM PHÁT SỰ KIỆN MỞ MODAL
-  const triggerAuthModal = () => {
-    window.dispatchEvent(new CustomEvent('openAuthModal', { detail: { view: 'login' } }))
-  }
-
   return (
     <section className='max-w-7xl mx-auto px-4 mt-6 space-y-4'>
       {/* TOP */}
@@ -118,14 +113,6 @@ function Banner() {
           <div className='bg-white p-4 rounded-2xl shadow'>
             <h3 className='font-bold text-sm'>Chào mừng đến 7Store</h3>
             <p className='text-gray-500 text-xs mt-2'>Đăng ký để nhận ưu đãi hấp dẫn</p>
-
-            {/* GẮN SỰ KIỆN VÀO NÚT NÀY */}
-            <button
-              onClick={triggerAuthModal}
-              className='mt-3 w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition'
-            >
-              Đăng nhập / Đăng ký
-            </button>
           </div>
 
           {/* Ẩn các banner phụ bên trái trên mobile để đỡ dài màn hình, chỉ hiện trên màn hình to (lg:block) */}

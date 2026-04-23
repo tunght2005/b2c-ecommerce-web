@@ -29,18 +29,18 @@ function Navbar() {
   ]
 
   return (
-    <nav className='theme-navbar border-b shadow-sm sticky top-[72px] z-40'>
+    <nav className='theme-navbar sticky top-30 z-40 border-b shadow-sm md:top-18'>
       <div className='max-w-7xl mx-auto'>
         {/* LỚP NGOÀI: Tạo vùng cuộn */}
         <div className='overflow-x-auto md:overflow-visible no-scrollbar'>
           {/* LỚP TRONG: Thay đổi chí mạng -> dùng w-max min-w-full */}
           <div className='flex items-center gap-4 md:gap-6 px-4 w-max min-w-full'>
             {menus.map((menu) => (
-              <div key={menu.name} className='relative py-4 flex-shrink-0 group'>
+              <div key={menu.name} className='relative py-4 shrink-0 group'>
                 {/* MAIN ITEM */}
                 <div
                   onClick={() => navigate(menu.path)}
-                  className='flex items-center gap-1.5 md:gap-2 cursor-pointer text-gray-700 group-hover:text-red-600 font-semibold transition text-sm md:text-base whitespace-nowrap'
+                  className='flex items-center gap-1.5 md:gap-2 cursor-pointer text-slate-700 dark:text-slate-100 group-hover:text-red-600 font-semibold transition text-sm md:text-base whitespace-nowrap'
                 >
                   {menu.icon}
                   <span>{menu.name}</span>
@@ -51,9 +51,9 @@ function Navbar() {
                 </div>
 
                 {/* DROPDOWN */}
-                <div className='absolute left-0 top-[100%] z-50 hidden md:group-hover:block animate-fadeIn'>
+                <div className='absolute left-0 top-full z-50 hidden md:group-hover:block animate-fadeIn'>
                   <div className='absolute -top-4 left-0 w-full h-8 bg-transparent'></div>
-                  <div className='bg-white shadow-xl rounded-xl p-4 min-w-[200px] border border-gray-100 relative mt-1'>
+                  <div className='theme-card shadow-xl rounded-xl p-4 min-w-50 border border-gray-100 dark:border-slate-700 relative mt-1'>
                     {menu.items.map((item, index) => (
                       <div
                         key={index}
@@ -61,7 +61,7 @@ function Navbar() {
                           e.stopPropagation()
                           navigate(`${menu.path}?brand=${item.toLowerCase()}`)
                         }}
-                        className='py-2 px-3 rounded-lg hover:bg-red-50 hover:text-red-600 font-medium cursor-pointer text-sm transition-colors text-gray-700 whitespace-nowrap'
+                        className='py-2 px-3 rounded-lg hover:bg-red-50 hover:text-red-600 font-medium cursor-pointer text-sm transition-colors text-slate-700 dark:text-slate-200 whitespace-nowrap'
                       >
                         {item}
                       </div>
@@ -72,14 +72,14 @@ function Navbar() {
             ))}
 
             {/* CỤC ĐỆM BẢO VỆ LỀ PHẢI: Ép trình duyệt phải chừa ra một khoảng cách ở cuối */}
-            <div className='w-6 h-1 flex-shrink-0 md:hidden'></div>
+            <div className='w-6 h-1 shrink-0 md:hidden'></div>
 
             {/* EXTRA BADGE */}
-            <div className='ml-auto hidden lg:flex items-center gap-4 flex-shrink-0'>
-              <span className='bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap'>
+            <div className='ml-auto hidden lg:flex items-center gap-4 shrink-0'>
+              <span className='bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap'>
                 🔥 Deal hot
               </span>
-              <span className='bg-green-100 text-green-600 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap'>
+              <span className='bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap'>
                 🎓 Sinh viên
               </span>
             </div>

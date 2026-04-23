@@ -2,7 +2,9 @@
 
 :root {
   color-scheme: light;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji';
   --bg: #f8fafc;
   --surface: #ffffff;
   --surface-soft: #f1f5f9;
@@ -35,7 +37,8 @@
   --input-border: rgba(148, 163, 184, 0.28);
 }
 
-html, body {
+html,
+body {
   min-height: 100%;
 }
 
@@ -44,7 +47,13 @@ body {
   min-height: 100vh;
   background: radial-gradient(circle at top right, rgba(239, 68, 68, 0.14), transparent 26%), var(--bg);
   color: var(--text-main);
-  transition: background 0.35s ease, color 0.35s ease;
+  transition:
+    background 0.35s ease,
+    color 0.35s ease;
+}
+
+#root {
+  min-height: 100vh;
 }
 
 * {
@@ -56,17 +65,25 @@ a {
   color: inherit;
 }
 
-body, input, textarea, button, select {
+body,
+input,
+textarea,
+button,
+select {
   font-family: inherit;
 }
 
 .theme-header {
-  background: radial-gradient(circle at top left, rgba(254, 204, 21, 0.18), transparent 32%), linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background:
+    radial-gradient(circle at top left, rgba(254, 204, 21, 0.18), transparent 32%),
+    linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
 }
 
 .dark .theme-header {
-  background: radial-gradient(circle at top left, rgba(248, 113, 113, 0.18), transparent 30%), linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%);
+  background:
+    radial-gradient(circle at top left, rgba(248, 113, 113, 0.18), transparent 30%),
+    linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%);
 }
 
 .theme-search {
@@ -85,6 +102,20 @@ body, input, textarea, button, select {
   background-color: var(--surface);
 }
 
+.theme-page {
+  background: radial-gradient(circle at top right, rgba(239, 68, 68, 0.08), transparent 30%), var(--bg);
+  color: var(--text-main);
+}
+
+.theme-footer {
+  background: linear-gradient(165deg, #0f172a 0%, #020617 100%);
+  color: #f8fafc;
+}
+
+.dark .theme-footer {
+  background: linear-gradient(165deg, #020617 0%, #000000 100%);
+}
+
 .theme-navbar {
   border-color: var(--border);
 }
@@ -93,6 +124,10 @@ body, input, textarea, button, select {
 .dark .theme-card {
   background-color: var(--surface);
   border-color: var(--border);
+}
+
+.dark .theme-navbar {
+  background-color: rgba(2, 6, 23, 0.94);
 }
 
 .dark .bg-white,
@@ -154,4 +189,3 @@ body, input, textarea, button, select {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-
