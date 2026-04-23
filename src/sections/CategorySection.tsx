@@ -102,7 +102,7 @@ export default function CategorySection({ title, banner }: Props) {
         <div className='lg:col-span-1'>
           <div className='bg-white rounded-3xl overflow-hidden shadow-md h-full border border-gray-200'>
             <img
-              src={resolveImageUrl(banner) || banner}
+              src={banner.startsWith('/') ? banner : resolveImageUrl(banner) || banner}
               alt='banner'
               className='w-full h-full min-h-125 object-cover bg-white cursor-pointer hover:opacity-90 transition'
             />
