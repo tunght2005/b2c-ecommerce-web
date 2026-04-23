@@ -8,6 +8,14 @@ export default function ProductSection() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
+  const parseList = <T,>(payload: unknown): T[] => {
+    if (Array.isArray(payload)) return payload as T[]
+    if (payload && typeof payload === 'object' && Array.isArray((payload as Record<string, unknown>).data)) {
+      return (payload as Record<string, unknown>).data as T[]
+    }
+    return []
+  }
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -34,12 +42,35 @@ export default function ProductSection() {
                 ])
 
                 // Trích xuất list vào product object
-                const variants = Array.isArray(variantsRes)
-                  ? variantsRes
-                  : ((variantsRes as Record<string, unknown>).data as Record<string, unknown>[]) || []
-                const images = Array.isArray(imagesRes)
-                  ? imagesRes
-                  : ((imagesRes as Record<string, unknown>).data as Record<string, unknown>[]) || []
+                const variants = parseList<Record<string, unknown>>(variantsRes)
+                const images = parseList<Record<string, unknown>>(imagesRes)
+
+                // Chỉ lấy sản phẩm đang có promotion thật theo ít nhất 1 variant
+                const variantIds = variants.map((v) => String(v?._id || v?.id || '')).filter((id) => id.length > 0)
+
+                if (variantIds.length === 0) {
+                  return null
+                }
+
+                const promotions = await Promise.all(
+                  variantIds.map((variantId) => fetchClient(`/promotions/best/${variantId}`).catch(() => null))
+                )
+
+                const hasActiveDiscount = promotions.some((promoRes: any) => {
+                  const promo = promoRes?.data || promoRes
+                  const finalPrice = Number(promo?.final_price)
+                  const originalPrice = Number(promo?.original_price)
+                  return (
+                    !!promo?._id &&
+                    Number.isFinite(finalPrice) &&
+                    Number.isFinite(originalPrice) &&
+                    finalPrice < originalPrice
+                  )
+                })
+
+                if (!hasActiveDiscount) {
+                  return null
+                }
 
                 return {
                   ...prod,
@@ -55,11 +86,13 @@ export default function ProductSection() {
                 }
               } catch {
                 // Lỗi lẻ của 1 sản phẩm không làm văng toàn bộ hệ thống
-                return prod
+                return null
               }
             })
           )
-          setProducts(enrichedProducts)
+
+          const onlyDiscountedProducts = enrichedProducts.filter(Boolean) as Product[]
+          setProducts(onlyDiscountedProducts)
         } else {
           setProducts([])
         }
@@ -75,7 +108,7 @@ export default function ProductSection() {
   return (
     <section className='max-w-7xl mx-auto mt-8 sm:mt-12 px-4'>
       <h2 className='text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 border-l-4 border-red-500 pl-3'>
-        Sản phẩm nổi bật
+        Sản phẩm nổi bật đang giảm giá
       </h2>
 
       {loading ? (
