@@ -284,6 +284,36 @@ export default function ProductDetail() {
     }
   }
 
+  const handleShareProduct = async () => {
+    const productUrl = window.location.href
+    const shareTitle = product?.name || 'Sản phẩm 7Store'
+    const shareText = product?.description
+      ? `${shareTitle} - ${product.description}`
+      : `Khám phá ${shareTitle} tại 7Store.`
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: productUrl
+        })
+        return
+      }
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(productUrl)
+        showToast('Đã sao chép link sản phẩm vào clipboard!', 'success')
+        return
+      }
+
+      throw new Error('Trình duyệt không hỗ trợ chia sẻ')
+    } catch (error: any) {
+      if (error?.name === 'AbortError') return
+      showToast('Không thể chia sẻ sản phẩm lúc này.', 'error')
+    }
+  }
+
   const handleVoteHelpful = async (reviewId: string) => {
     if (!reviewId) return
     try {
@@ -353,7 +383,11 @@ export default function ProductDetail() {
                 showText={true}
                 className='flex-1 lg:flex-none border border-gray-300 px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl'
               />
-              <button className='flex-1 lg:flex-none border border-gray-300 px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 hover:border-red-500 hover:text-red-500 transition text-sm sm:text-base'>
+              <button
+                type='button'
+                onClick={handleShareProduct}
+                className='flex-1 lg:flex-none border border-gray-300 px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 hover:border-red-500 hover:text-red-500 transition text-sm sm:text-base'
+              >
                 <Share2 size={16} className='sm:w-4.5 sm:h-4.5' />
                 Chia sẻ
               </button>
@@ -506,6 +540,7 @@ export default function ProductDetail() {
                           avatarUrl = userInfo.avatar
                         }
                       }
+                      // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     } catch (e) {
                       // skip
                     }
