@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { showToast } from '../components/Toast'
 import Seo from '../components/Seo'
+import { resolveImageUrl } from '../api/config'
 
 // --- TYPES & MOCK DATA ---
 interface Address {
@@ -61,6 +62,20 @@ const Cart = () => {
   const navigate = useNavigate()
 
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null)
+
+  const fetchProductImage = async (productId: string) => {
+    if (!productId) return undefined
+
+    try {
+      const res = await fetchClient<Record<string, unknown>>(`/product-images/product/${productId}`).catch(() => null)
+      const data = (res as any)?.data || res
+      const images = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : []
+      const primaryImage = images.find((img: Record<string, unknown>) => img?.is_primary) || images[0]
+      return resolveImageUrl((primaryImage?.url as string | undefined) || undefined)
+    } catch {
+      return undefined
+    }
+  }
 
   useEffect(() => {
     const loadCheckoutData = async () => {
@@ -131,7 +146,14 @@ const Cart = () => {
               name: item.name || (pId?.name as string) || 'Sản phẩm từ Server',
               price: finalPrice,
               oldPrice: oldPrice,
-              image: item.image || (pId?.image as string) || 'https://via.placeholder.com/150',
+              image:
+                resolveImageUrl(
+                  (item.image as string | undefined) ||
+                    (pId?.thumbnail as string | undefined) ||
+                    (pId?.image as string | undefined)
+                ) ||
+                (await fetchProductImage((pId?._id as string) || (pId?.id as string) || '')) ||
+                'https://via.placeholder.com/150',
               variant: item.variant || (vId?.sku as string) || 'Tiêu chuẩn',
               stock: (vId?.stock as number) ?? 100
             }

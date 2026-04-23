@@ -157,17 +157,33 @@ function Header() {
     return loadedItems.map((item: any, index: number) => {
       const variant = item.variant_id as Record<string, unknown> | undefined
       const product = variant?.product_id as Record<string, unknown> | undefined
+      const productId = (product?._id as string) || (product?.id as string) || ''
 
       return {
         _id: variant?._id || item._id || item.id || `${index}`,
+        productId: productId || undefined,
         name: item.name || (product?.name as string) || 'Sản phẩm từ Server',
         variantId: variant?._id || item.variant_id?._id || item.variant_id || undefined,
         price: Number(variant?.price || product?.price || 0),
         quantity: Number(item.quantity || 1),
-        image: item.image || (product?.image as string) || undefined,
+        image: item.image || (product?.thumbnail as string) || (product?.image as string) || undefined,
         variant: item.variant || (variant?.sku as string) || 'Tiêu chuẩn'
       }
     })
+  }
+
+  const fetchProductImage = async (productId: string) => {
+    if (!productId) return undefined
+
+    try {
+      const res = await fetchClient<Record<string, unknown>>(`/product-images/product/${productId}`).catch(() => null)
+      const data = (res as any)?.data || res
+      const images = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : []
+      const primaryImage = images.find((img: Record<string, unknown>) => img?.is_primary) || images[0]
+      return resolveImageUrl((primaryImage?.url as string | undefined) || undefined)
+    } catch {
+      return undefined
+    }
   }
 
   // --- LẮNG NGHE SỰ KIỆN: Đồng bộ số lượng giỏ hàng thực tế ---
@@ -213,9 +229,36 @@ function Header() {
         })
       )
 
-      const total = items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0)
+      const productIds = Array.from(
+        new Set(
+          items
+            .map((item: any) => {
+              return (item.productId as string) || ''
+            })
+            .filter(Boolean)
+        )
+      )
+
+      const productImages = await Promise.all(
+        productIds.map(async (productId) => [productId, await fetchProductImage(productId)] as const)
+      )
+      const productImageMap = new Map(productImages.filter(([, image]) => Boolean(image)))
+
+      const itemsWithImages = items.map((item: any) => {
+        const productId = (item.productId as string) || ''
+        const imageFromApi = item.image
+
+        return {
+          ...item,
+          productId: productId || item.productId,
+          productImage: productImageMap.get(productId) || item.productImage,
+          image: resolveImageUrl(imageFromApi as string | undefined) || productImageMap.get(productId) || item.image
+        }
+      })
+
+      const total = itemsWithImages.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0)
       setCartCount(total)
-      setCartItems(items)
+      setCartItems(itemsWithImages)
     } catch (error) {
       console.error('Không thể lấy số lượng giỏ hàng:', error)
       setCartCount(0)
@@ -395,7 +438,21 @@ function Header() {
         const data = await res.json()
         // Vét cạn cấu trúc JSON trả về
         const products = Array.isArray(data) ? data : data?.data || data?.products || data?.results || []
-        setSuggestions(products.slice(0, 6)) // Chỉ hiện tối đa 6 gợi ý
+        const topProducts = products.slice(0, 6)
+
+        const productsWithImages = await Promise.all(
+          topProducts.map(async (product: SearchSuggestion & { thumbnail?: string; image?: string }) => {
+            const existingImage = resolveImageUrl(product.thumbnail || product.image)
+            if (existingImage) {
+              return { ...product, image: existingImage }
+            }
+
+            const productImage = await fetchProductImage(product._id)
+            return { ...product, image: productImage }
+          })
+        )
+
+        setSuggestions(productsWithImages) // Chỉ hiện tối đa 6 gợi ý
       } catch {
         setSuggestions([])
       } finally {
@@ -425,7 +482,7 @@ function Header() {
           {isSearching && <Loader2 className='animate-spin text-red-500' size={18} />}
         </div>
 
-        <div className='max-h-[340px] overflow-auto p-2'>
+        <div className='max-h-85 overflow-auto p-2'>
           {isSearching ? (
             <div className='px-4 py-8 text-center text-sm text-gray-500'>Đang tìm kiếm...</div>
           ) : suggestions.length > 0 ? (
@@ -479,7 +536,7 @@ function Header() {
           />
 
           <div ref={searchWrapRef} className='relative hidden flex-1 md:block'>
-            <div className='relative w-full max-w-[520px] lg:max-w-[620px]'>
+            <div className='relative w-full max-w-130 lg:max-w-155'>
               <Search className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' size={18} />
               <input
                 value={keyword}
@@ -552,7 +609,7 @@ function Header() {
                       <User size={18} />
                     )}
                   </div>
-                  <span className='hidden max-w-[120px] truncate font-bold sm:inline'>
+                  <span className='hidden max-w-30 truncate font-bold sm:inline'>
                     {userInfo.username || 'Người dùng'}
                   </span>
                 </button>
@@ -636,7 +693,7 @@ function Header() {
 
       {isMobileSearchOpen && (
         <div
-          className='fixed inset-0 z-[70] bg-black/55 p-3 md:hidden'
+          className='fixed inset-0 z-70 bg-black/55 p-3 md:hidden'
           onClick={() => {
             setIsMobileSearchOpen(false)
             setSuggestions([])

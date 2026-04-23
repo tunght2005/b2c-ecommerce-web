@@ -1,15 +1,20 @@
 import { ShoppingBag, ChevronRight } from 'lucide-react'
 import { resolveImageUrl } from '../../api/config'
 
+const FALLBACK_CART_IMAGE =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='18' fill='%23f3f4f6'/%3E%3Cpath d='M28 31h24c2.2 0 4 1.8 4 4v10c0 2.2-1.8 4-4 4H28c-2.2 0-4-1.8-4-4V35c0-2.2 1.8-4 4-4zm2 4v8h20v-8H30zm6 3.5a2.5 2.5 0 1 0 0 .1z' fill='%23d1d5db'/%3E%3C/svg%3E"
+
 export interface CartPopoverItem {
   _id?: string
   id?: string | number
+  productId?: string
   variantId?: string
   name: string
   price: number
   oldPrice?: number
   quantity: number
   image?: string
+  productImage?: string
   variant?: string
 }
 
@@ -54,7 +59,7 @@ export default function CartPopover({ open, loading = false, items, totalItems, 
               >
                 <div className='h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-gray-100'>
                   <img
-                    src={resolveImageUrl(item.image) || 'https://via.placeholder.com/80x80?text=Cart'}
+                    src={resolveImageUrl(item.productImage || item.image) || FALLBACK_CART_IMAGE}
                     alt={item.name}
                     className='h-full w-full object-cover'
                   />
